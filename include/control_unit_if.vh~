@@ -1,0 +1,27 @@
+`ifndef CONTROL_UNIT_IF_VH
+`define CONTROL_UNIT_IF_VH
+
+`include "cpu_types_pkg.vh"
+
+interface control_unit_if;
+    import cpu_types_pkg::*;
+
+    opcode_t	opcode;
+    funct_t	funct;
+    logic	[2:0]PC_src;
+    logic	shamt_src;
+    logic	Ext_src;
+    logic	LUI_src;
+    logic	[2:0]RegDst;
+    logic	Reg_Input;
+    logic	RegWEN;
+    logic	ALU_op;
+    logic	MemWrite;
+    logic	MemRead;
+    logic	halt;
+    logic	MemtoReg;
+    logic	Zero;
+    logic
+    
+endinterface
+`endif

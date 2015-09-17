@@ -40,6 +40,11 @@ module alu(
 	   out = $signed(a) - $signed(b);//Sub
 	   overflow = (a[31] ^ b[31]) & !(b[31] ^ out[31]);
 	end
+	ALU_SLT:begin
+	   out = ($signed(a) < $signed(b))? 1 : 0;
+	end
+	ALU_SLTU:begin
+	   out = ($signed(a) < $signed(b))? 1 : 0;
 	default:out[31:0] = 'z;
       endcase // case (aluop)
    end // always_comb
