@@ -14,7 +14,7 @@ module control_unit(control_unit_if.cu cuif);
    //
    always_comb begin
       //****initialize****//
-      cuif.PC_src = 3'b000;
+      cuif.PC_src = 2'b00;
       cuif.Ext_src = 0;
       cuif.LUI_src = 0;
       cuif.portb_src = 2'b01;
@@ -28,12 +28,12 @@ module control_unit(control_unit_if.cu cuif);
       rw_flag = 1;
       //******************//
       
-      unique casez(cuif.opcode)
+      casez(cuif.opcode)
 	RTYPE:begin
 	   rw_flag = 1;
 	   cuif.portb_src = 2'b00;
 	   cuif.RegDst = 2'b00;
-	  unique casez(cuif.funct)
+	  casez(cuif.funct)
 	    SLL:begin
 	       cuif.ALU_op = ALU_SLL;
 	       cuif.portb_src = 2'b10; 
@@ -143,8 +143,10 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.MemWrite = 1;
 	end
 	LL:begin
+	   rw_flag = 0;
 	end
 	SC:begin
+	   rw_flag = 0;
 	end
 	HALT:begin
 	   rw_flag = 0;
