@@ -11,7 +11,7 @@ interface control_unit_if;
    logic	[1:0]PC_src;//2'b00 for normal +4, 2'b01 for branch, 2'b10 for jump, 2'b11 for register
    logic 	     Ext_src;// 1 for signed extend, 0 for zero extend
    logic 	     LUI_src;// 1 for lui, 0 in other case
-   logic [2:0] 	     portb_scr;//2'b00 for port b input to alu, 2'b01 for imm, 2'b10 for shamt 	     
+   logic [2:0] 	     portb_src;//2'b00 for port b input to alu, 2'b01 for imm, 2'b10 for shamt 	     
    logic [1:0] 	     RegDst;//2'b00 for rd, 2'b01 for rt, 2'b10 for 31 
    logic 	     RegWEN;//
    aluop_t 	     ALU_op;//
@@ -27,7 +27,7 @@ interface control_unit_if;
 
 modport cu (
 	    input  opcode, funct, Zero, Overflow, ihit, dhit,
-	    output PC_src, Ext_src, LUI_src, portb_scr, RegDst, RegWEN, ALU_op, MemWrite, MemRead, halt, MemtoReg, PC_EN
+	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, halt, MemtoReg, PC_EN
 	    );
  	     
     

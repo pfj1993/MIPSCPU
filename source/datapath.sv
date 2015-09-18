@@ -34,16 +34,14 @@ module datapath (
 
    //port init
    logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN;
-   word_t PC_next, PC, out;
-   regbits_t a, b;
-   aluop_t aluop;
+   word_t PC_next, PC, out, portb_mux_out;
      
    //units map
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    register_file RF(CLK, nRST, rfif);
-   alu ALU(a, b, aluop, negative, overflow, zero, out);
+   alu ALU(rfif.rdat1, portb_mux_out, cuif.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
-   memory_request (CLK, nRST, dpif.ihit, dpif.dhit, cuif.MemToReg,  dmemREN, dmemWEN, imemREN);
+   request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, cuif.MemtoReg, cuif.MemWrite, dmemREN, dmemWEN, imemREN);
 
    //Instrction Fetch Block
    j_t j_inst;
@@ -61,7 +59,7 @@ module datapath (
    word_t luiExt;
    
    //Extender assignment
-   assign signedExt = !i_inst.imm[15] ? {16'h0000, i_inst.imm} : {16'hf000, i_inst.imm};
+   assign signedExt = !i_inst.imm[15] ? {16'h0000, i_inst.imm} : {16'hFFFF, i_inst.imm};
    assign zeroExt = {16'h0000, i_inst.imm};
    assign jumpExt = {j_inst.addr, 2'b00};
    assign luiExt = {i_inst.imm, 16'h0000};
@@ -72,13 +70,13 @@ module datapath (
    word_t PC_branch;
    word_t PC_reg;
    word_t PC_jump;
-   assign PC_en = CU.PC_EN;
+   assign PC_en = cuif.PC_EN;
    
    //PC caculation
    assign PC_plus4 = PC + 4;
    assign PC_jump = {PC[31:28], jumpExt};
    assign PC_branch = PC_plus4 + (signedExt << 2);
-   assign PC_reg = rifi.rdata1;
+   assign PC_reg = rfif.rdat1;
    //*************************************************************************************//
 
 
@@ -87,6 +85,8 @@ module datapath (
    assign cuif.Overflow = overflow;
    assign cuif.ihit = dpif.ihit;
    assign cuif.dhit = dpif.dhit;
+   assign cuif.opcode = r_inst.opcode;
+   assign cuif.funct = r_inst.funct;
    //***********************************************************************************//
 
    //************************************Request Unit**********************************//
@@ -108,7 +108,7 @@ module datapath (
    regbits_t RWD_out;
    always_comb begin
       RWD_out = r_inst.rd;
-      casez(CU.RegDst)
+      casez(cuif.RegDst)
 	2'b01:begin
 	   RWD_out = r_inst.rt;
 	end
@@ -117,30 +117,32 @@ module datapath (
 	end
       endcase // casez (CU.RegDst)
    end // always_comb
-
    //Reg Write Port Mux
-   word_t IntoMem;
+   word_t IntoLUI;
    always_comb begin
-      IntoMem = out;
+      IntoLUI = out;
       casez(cuif.MemtoReg)
 	2'b01:begin
-	   IntoMem = dpif.dmemload;
+	   IntoLUI = dpif.dmemload;
 	end
 	2'b10:begin
-	   IntoMem = PC_plus4;
+	   IntoLUI = PC_plus4;
 	end
       endcase // casez (MemtoReg)
    end // always_comb
+
+   //LUI Mux
+   word_t IntoMem;
+   assign IntoMem = cuif.LUI_src? luiExt : IntoLUI; 
    
    //Extender Mux
    word_t extended_imm;
-   assign extended_imm = CU.Ext_src? signedExt : zeroExt;
+   assign extended_imm = cuif.Ext_src? signedExt : zeroExt;
 
    //ALU Port b select Mux
-   word_t portb_mux_out;
    always_comb begin
       portb_mux_out = rfif.rdat2;
-      casez(CU.portb_scr)
+      casez(cuif.portb_src)
 	2'b01:begin
 	   portb_mux_out = extended_imm;
 	end
@@ -155,7 +157,7 @@ module datapath (
    assign PC_next = PC_out;
    always_comb begin
       PC_out = PC_plus4;
-      unique casez(CU.PC_src)
+      unique casez(cuif.PC_src)
 	2'b01:begin
 	   PC_out = PC_branch;
 	end
@@ -180,9 +182,9 @@ module datapath (
    //*******************************I/O assignment*****************************
    assign dpif.halt = halt_reg;
    assign dpif.imemREN = imemREN;
-   assign dpif.imemaddr = PC_next;
-   assign dpif.dmemREN = mrif.dmemREN;
-   assign dpif.dmemWEN = mrif.dmemWEN;
+   assign dpif.imemaddr = PC;
+   assign dpif.dmemREN = dmemREN;
+   assign dpif.dmemWEN = dmemWEN;
    assign dpif.dmemstore = rfif.rdat2;
    assign dpif.dmemaddr = out;
    //*****************************************************************************//

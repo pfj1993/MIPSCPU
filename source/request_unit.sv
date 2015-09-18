@@ -1,12 +1,13 @@
 `include "cpu_types_pkg.vh"
 import cpu_types_pkg::*;
 
-module memory_request (
+module request_unit (
   		       input logic CLK,
 		       input logic nRST,
   		       input logic ihit,
 		       input logic dhit,
-		       input logic [1:0]MemToReg;
+		       input logic [1:0]MemToReg,
+		       input logic MemWrite,
 		       output logic dmemREN,
 		       output logic dmemWEN,
 		       output logic imemREN

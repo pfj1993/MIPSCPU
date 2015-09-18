@@ -10,7 +10,7 @@ module pc(
 
    always_ff @(posedge CLK,negedge nRST) begin
       if (!nRST) begin
-	 PC <= {default:0};
+	 PC <= '{default:'0};
       end else if(PC_en) begin
 	 PC <= PC_next;
       end
