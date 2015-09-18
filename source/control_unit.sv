@@ -104,11 +104,13 @@ module control_unit(control_unit_if.cu cuif);
 	BEQ:begin
 	   cuif.ALU_op = ALU_SUB;
 	   cuif.PC_src = (cuif.Zero)? 2'b01 : 2'b00;
+	   cuif.portb_src = 2'b00;
 	   rw_flag = 0;
 	end
 	BNE:begin
 	   cuif.ALU_op = ALU_SUB;
 	   cuif.PC_src = (cuif.Zero)? 2'b00 : 2'b01;
+	   cuif.portb_src = 2'b00;
 	   rw_flag = 0;
 	end
 	SLTI:begin
