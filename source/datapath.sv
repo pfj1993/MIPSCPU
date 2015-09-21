@@ -157,7 +157,7 @@ module datapath (
    assign PC_next = PC_out;
    always_comb begin
       PC_out = PC_plus4;
-      unique casez(cuif.PC_src)
+      casez(cuif.PC_src)
 	2'b01:begin
 	   PC_out = PC_branch;
 	end
