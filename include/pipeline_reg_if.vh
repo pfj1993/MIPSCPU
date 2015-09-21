@@ -30,6 +30,11 @@ interface pipline_reg_if;
    //*****************CACHE_SIGNAL****************//
    logic       ihit_in, ihit_out;//
    logic       dhit_in, dhit_out;//
+   word_t      inst_in, inst_out;
+   word_t      data_in, data_out;
+   word_t      iadd_in, iadd_out;
+   word_t      dadd_in, dadd_out;
+   
 
    //*******************ALU*********************//
    logic       porta_in, portb_in, porta_out, portb_out;//
