@@ -34,7 +34,7 @@ module datapath (
    control_unit_if cuif();
 
    //port init
-   logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN;
+   logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt;
    word_t PC_next, PC, out, portb_mux_out;
      
    //units map
@@ -102,7 +102,7 @@ module datapath (
 	 ifid.pc <= 0;
       end else if (ifid_en)begin
 	 ifid.instr <= dpif.imemload;
-	 ifid.pc <= PC
+	 ifid.pc <= PC;
       end
    end
    
@@ -129,20 +129,36 @@ module datapath (
 	 idex.rdata_1 <= rfif.rdat1;
 	 idex.rdata_2 <= rfif.rdat2;
 	 idex.pc <= pc;
-	 idex.bar
-   //************************************Request Unit**********************************//
+	 idex.bar <= cuif.bar;
+	 idex.LUI_src <= cuif.LUI_src;
+	 idex.Ext_src <= cuif.Ext_src;
+	 idex.protb_src <= cuif.portb_src;
+	 idex.PC_src <= cuif.PC_src;
+	 idex.RegWEN <= cuif.RegWEN;
+	 idex.RegDst <= cuif.RegDst;
+	 idex.ALU_op <= cuif.ALU_op;
+	 idex.MemWrite <= cuif.MemWrite;
+	 idex.MemRead <= cuif.MemRead;
+	 idex.MemtoReg <= cuif.MemtoReg;
+	 idex.checkover <= cuif.check_over;
+	 idex.mem_halt <= cuif.mem_halt;
+      end // if (idex_en)
+   end // always_ff @
      
    
-   //HALT Reg
+   //***********************************//
+   //        HALT Reg and logic
+   //**********************************//
    logic halt_reg;
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
 	 halt_reg <= 0;
       end else begin
-	 halt_reg <= cuif.halt;
+	 halt_reg <= halt;
       end
    end
-   
+   assign halt = (check_over & overflow) | mem_halt;
+
    //********************************ALU MUX SET*****************************************//
 
    //Reg Write Dst Mux

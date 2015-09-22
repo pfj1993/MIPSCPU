@@ -17,17 +17,14 @@ interface control_unit_if;
    aluop_t 	     ALU_op;//
    logic 	     MemWrite;//
    logic 	     MemRead;//   
-   logic 	     halt;//
    logic [1:0] 	     MemtoReg;//2'b00 from alu, 2'b01 from memory, 2'b10 from pc + 4
-   logic 	     ihit;//
-   logic 	     dhit;// 	     
-   logic 	     PC_EN;//
-   logic 	     Zero;//
-   logic 	     Overflow;//
+   logic 	     check_over;
+   logic 	     mem_halt;
+   logic 	     PC_EN;
 
 modport cu (
-	    input  opcode, funct, Zero, Overflow, ihit, dhit,
-	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, halt, MemtoReg, PC_EN
+	    input  opcode, funct
+	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt
 	    );
  	     
     
