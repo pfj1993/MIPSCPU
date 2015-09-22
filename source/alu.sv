@@ -44,7 +44,7 @@ module alu(
 	   out = ($signed(a) < $signed(b))? 1 : 0;
 	end
 	ALU_SLTU:begin
-	   out = ($signed(a) < $signed(b))? 1 : 0;
+	   out = ($unsigned(a) < $unsigned(b))? 1 : 0;
 	end
 	default:out[31:0] = 'z;
       endcase // case (aluop)

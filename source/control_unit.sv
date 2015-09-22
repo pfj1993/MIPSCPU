@@ -72,7 +72,7 @@ module control_unit(control_unit_if.cu cuif);
 	       cuif.ALU_op = ALU_SLT;
 	    end
 	    SLTU:begin
-	       cuif.ALU_op = ALU_SLT;
+	       cuif.ALU_op = ALU_SLTU;
 	    end
 	    JR:begin
 	       cuif.PC_src = 2'b11;
