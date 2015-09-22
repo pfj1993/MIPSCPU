@@ -14,7 +14,7 @@
 
 // register file if
 `include "register_file_if.vh"
-
+`include "pipline_reg_if.vh"
 `include "control_unit_if.vh"
 
 module datapath (
@@ -29,6 +29,7 @@ module datapath (
    parameter PC_INIT = 0;
    
    //if import
+   pipline_reg_if plif();
    register_file_if rfif();
    control_unit_if cuif();
 
@@ -43,6 +44,12 @@ module datapath (
    control_unit CU(cuif);
    request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, cuif.MemtoReg, cuif.MemWrite, dmemREN, dmemWEN, imemREN);
 
+   //pipeline reg
+   ifid_p ifid;
+   idex_p idex;
+   exmem_p exmem;
+   mem_p mem;
+   
    //Instrction Fetch Block
    j_t j_inst;
    i_t i_inst;
@@ -79,6 +86,17 @@ module datapath (
    assign PC_reg = rfif.rdat1;
    //*************************************************************************************//
 
+   //************************************//
+   //  Instruction Fetch Unit Register  //
+   //***********************************//
+
+   always_ff @(posedge CLK, negedge nRST) begin
+      if (!nRST) begin
+	 ifid.instr <= 0;
+      end else begin
+	 ifid.instr <= dpif.imemload;
+      
+   
 
    //***********************************Control Block************************************//
    assign cuif.Zero = zero;
