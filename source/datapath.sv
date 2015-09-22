@@ -49,14 +49,20 @@ module datapath (
    idex_p idex;
    exmem_p exmem;
    mem_p mem;
-   
-   //Instrction Fetch Block
+
+   //flush signal
+   logic 		     ifid_en = 1;
+   logic 		     idex_en = 1;
+   logic 		     exmem_en = 1;
+   logic 		     mem_en = 1
+ 
+   //Decode Instrction
    j_t j_inst;
    i_t i_inst;
    r_t r_inst;
-   assign j_inst = j_t'(dpif.imemload);
-   assign i_inst = i_t'(dpif.imemload);
-   assign r_inst = r_t'(dpif.imemload);
+   assign j_inst = j_t'(ifid.instr);
+   assign i_inst = i_t'(ifid.instr);
+   assign r_inst = r_t'(ifid.instr);
      
    //***********************************Extender*********************************
    word_t signedExt;
@@ -72,7 +78,7 @@ module datapath (
    assign luiExt = {i_inst.imm, 16'h0000};
    assign shamtExt = {27'b0,r_inst.shamt};
          
-   //***********************************PC block*************************************//
+   //***********************************I-Fetch state*************************************//
    word_t PC_plus4;
    word_t PC_branch;
    word_t PC_reg;
@@ -93,9 +99,12 @@ module datapath (
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
 	 ifid.instr <= 0;
-      end else begin
+	 ifid.pc <= 0;
+      end else if (ifid_en)begin
 	 ifid.instr <= dpif.imemload;
-      
+	 ifid.pc <= PC
+      end
+   end
    
 
    //***********************************Control Block************************************//
@@ -107,6 +116,20 @@ module datapath (
    assign cuif.funct = r_inst.funct;
    //***********************************************************************************//
 
+
+   //************************************//
+   //         Decode Register           //
+   //***********************************//
+
+   always_ff @(posedge CLK, negedge nRST) begin
+      if (!nRST) begin
+	 idex <= 0;
+      end else if(idex_en)begin
+	 idex.imm <= i_inst.imm;
+	 idex.rdata_1 <= rfif.rdat1;
+	 idex.rdata_2 <= rfif.rdat2;
+	 idex.pc <= pc;
+	 idex.bar
    //************************************Request Unit**********************************//
      
    

@@ -19,7 +19,7 @@ interface pipline_reg_if;
    //***********************************//
    
    typedef struct packed{
-      word_t imm;
+      logic [15:0] imm;
       word_t jadd;
       word_t rdata_1;
       word_t rdata_2;
