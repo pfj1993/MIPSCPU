@@ -9,7 +9,7 @@ module control_unit(control_unit_if.cu cuif);
    
    // halt logic//
    assign cuif.halt = (check_over & cuif.Overflow) | mem_halt;
-   assign cuif.PC_EN = cuif.ihit & !cuif.dhit ;
+   assign cuif.PC_EN = cuif.ihit & !cuif.dhit;
    assign cuif.RegWEN = (cuif.MemtoReg != 2'b01)? rw_flag : cuif.dhit? rw_flag : 0;  
    //
    always_comb begin
