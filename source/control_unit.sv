@@ -22,6 +22,7 @@ module control_unit(control_unit_if.cu cuif);
       cuif.MemtoReg = 2'b00;
       cuif.check_over = 0;
       cuif.mem_halt = 0;
+      cuif.bra = 0;
       rw_flag = 1;
       //******************//
       
@@ -100,13 +101,15 @@ module control_unit(control_unit_if.cu cuif);
 	end
 	BEQ:begin
 	   cuif.ALU_op = ALU_SUB;
-	   cuif.PC_src = (cuif.Zero)? 2'b01 : 2'b00;
+	   cuif.PC_src =  2'b01;
+	   cuif.bra = 0;
 	   cuif.portb_src = 2'b00;
 	   rw_flag = 0;
 	end
 	BNE:begin
 	   cuif.ALU_op = ALU_SUB;
-	   cuif.PC_src = (cuif.Zero)? 2'b00 : 2'b01;
+	   cuif.PC_src = 2'b01;
+	   cuif.bra = 1;
 	   cuif.portb_src = 2'b00;
 	   rw_flag = 0;
 	end

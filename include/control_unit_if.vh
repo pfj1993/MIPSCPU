@@ -21,10 +21,11 @@ interface control_unit_if;
    logic 	     check_over;
    logic 	     mem_halt;
    logic 	     PC_EN;
+   logic	     bra;
 
 modport cu (
-	    input  opcode, funct
-	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt
+	    input  opcode, funct,
+	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt, bra
 	    );
  	     
     

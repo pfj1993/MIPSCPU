@@ -14,7 +14,7 @@
 
 // register file if
 `include "register_file_if.vh"
-`include "pipline_reg_if.vh"
+`include "pipeline_reg_pkg.vh"
 `include "control_unit_if.vh"
 
 module datapath (
@@ -24,19 +24,18 @@ module datapath (
    
    // import types
    import cpu_types_pkg::*;
-   
+   import pipeline_reg_pkg::*;
    // pc init
    parameter PC_INIT = 0;
    
    //if import
-   pipline_reg_if plif();
    register_file_if rfif();
    control_unit_if cuif();
 
    //port init
    logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt;
    word_t PC_next, PC, out, portb_mux_out;
-     
+   
    //units map
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    register_file RF(CLK, nRST, rfif);
@@ -54,7 +53,10 @@ module datapath (
    logic 		     ifid_en = 1;
    logic 		     idex_en = 1;
    logic 		     exmem_en = 1;
-   logic 		     mem_en = 1
+   logic 		     mem_en = 1;
+
+   //reg out portal
+   regbits_t RWD_out;
  
    //Decode Instrction
    j_t j_inst;
@@ -99,7 +101,7 @@ module datapath (
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
 	 ifid.instr <= 0;
-	 ifid.pc <= 0;
+	 ifid.pc_plus4 <= 0;
       end else if (ifid_en)begin
 	 ifid.instr <= dpif.imemload;
 	 ifid.pc_plus4 <= PC_plus4;
@@ -108,7 +110,6 @@ module datapath (
       end
    end
    
-
    //***********************************Control Block************************************//
    assign cuif.opcode = r_inst.opcode;
    assign cuif.funct = r_inst.funct;
@@ -126,11 +127,11 @@ module datapath (
 	 idex.imm <= i_inst.imm;
 	 idex.rdat_1 <= rfif.rdat1;
 	 idex.rdat_2 <= rfif.rdat2;
-	 idex.pc_plus4 <= pc_plus4;
-	 idex.bar <= cuif.bar;
+	 idex.pc_plus4 <= ifid.pc_plus4;
+	 idex.bra <= cuif.bra;
 	 idex.LUI_src <= cuif.LUI_src;
 	 idex.Ext_src <= cuif.Ext_src;
-	 idex.protb_src <= cuif.portb_src;
+	 idex.portb_src <= cuif.portb_src;
 	 idex.PC_src <= cuif.PC_src;
 	 idex.RegWEN <= cuif.RegWEN;
 	 idex.RegDst <= cuif.RegDst;
@@ -138,7 +139,7 @@ module datapath (
 	 idex.MemWrite <= cuif.MemWrite;
 	 idex.MemRead <= cuif.MemRead;
 	 idex.MemtoReg <= cuif.MemtoReg;
-	 idex.checkover <= cuif.check_over;
+	 idex.check_over <= cuif.check_over;
 	 idex.mem_halt <= cuif.mem_halt;
       end // if (idex_en)
    end // always_ff @
@@ -155,7 +156,7 @@ module datapath (
 	 halt_reg <= halt;
       end
    end
-   assign halt = (check_over & overflow) | idex.mem_halt;
+   assign halt = (cuif.check_over & overflow) | idex.mem_halt;
 
    //***********************************//
    //Memory Operation / Memory Output Reg
@@ -169,13 +170,13 @@ module datapath (
 	 exmem.RegWEN <= idex.RegWEN;
 	 exmem.zero <= zero;
 	 exmem.overflow <= overflow;
-	 exmem.bar <= idex.bar;
+	 exmem.bra <= idex.bra;
 	 exmem.MemtoReg <= idex.MemtoReg;
 	 exmem.alu_out <= out;
 	 exmem.dload <= dpif.dmemload;
 	 exmem.RegDst_out <= RWD_out;
 	 exmem.pc_plus4 <= idex.pc_plus4;
-	 exmem.rdat2 <= idex.rdat2;
+	 exmem.rdat_2 <= idex.rdat_2;
       end // else: !if(!nRST)
    end // always_ff @ (posedge CLK, negedge n_RST)
 
@@ -201,7 +202,6 @@ module datapath (
    //********************************ALU MUX SET*****************************************//
 
    //Reg Write Dst Mux
-   regbits_t RWD_out;
    always_comb begin
       RWD_out = r_inst.rd;
       casez(idex.RegDst)
@@ -268,7 +268,7 @@ module datapath (
    end // always_comb
 
    //************************************Register File***********************************//
-   assign rfif.WEN = cuif.RegWEN;
+   assign rfif.WEN = mem.RegWEN;
    assign rfif.wsel = mem.RegDst_out;
    assign rfif.rsel1 = r_inst.rs;
    assign rfif.rsel2 = r_inst.rt;
@@ -282,7 +282,7 @@ module datapath (
    assign dpif.imemaddr = PC;
    assign dpif.dmemREN = dmemREN;
    assign dpif.dmemWEN = dmemWEN;
-   assign dpif.dmemstore = exmem.rdat2;
+   assign dpif.dmemstore = exmem.rdat_2;
    assign dpif.dmemaddr = exmem.alu_out;
    //*****************************************************************************//
 endmodule

@@ -1,9 +1,9 @@
-`ifndef PIPELINE_REG_IF_VH
-`define PIPELINE_REG_IF_VH
+`ifndef PIPELINE_REG_PKG_VH
+`define PIPELINE_REG_PKG_VH
 
 `include "cpu_types_pkg.vh"
 
-interface pipline_reg_if;
+package pipeline_reg_pkg;
    import cpu_types_pkg::*;
    //************************************//
    //  Instruction Fetch Unit Register  //
@@ -24,12 +24,12 @@ interface pipline_reg_if;
       word_t rdat_1;
       word_t rdat_2;
       word_t pc_plus4;
-      logic [1:0] bra// 2'b00 for no branch, 2'b01 for BNE, 2'b10 for BEQ 	  
+      logic	  bra;// 1 for BNE, 0 for BEQ 	  
       logic 	  LUI_src;
       logic 	  Ext_src;
-      logic [2:0] protb_src;
+      logic [2:0] portb_src;
       logic [1:0] PC_src;
-      logic 	  RegWEN
+      logic 	  RegWEN;
       logic [1:0] RegDst;
       aluop_t 	     ALU_op;//
       logic 	  MemWrite;//
@@ -48,13 +48,13 @@ interface pipline_reg_if;
       logic 	  RegWEN;
       logic 	  zero;
       logic 	  overflow;
-      logic [1:0] bar;
+      logic [1:0] bra;
       logic [1:0] MemtoReg;
       word_t	  alu_out;
       word_t 	  dload;
       regbits_t   RegDst_out;
       word_t	  pc_plus4;
-      word_t	  rdat2;
+      word_t	  rdat_2;
    }exmem_p;
 
    //************************************//
@@ -63,14 +63,14 @@ interface pipline_reg_if;
 
    typedef struct packed{
       logic [15:0]imm;
-      word_t	  pc;
+      word_t	  pc_plus4;
       logic [1:0] MemtoReg;
-      regbits_t   RegDst_out
+      regbits_t   RegDst_out;
       logic 	  RegWEN;
-      logic 	  halt
+      logic 	  halt;
       word_t dload;
       word_t alu_out; 
    }mem_p;
-   
-   
+endpackage   
+`endif   
    
