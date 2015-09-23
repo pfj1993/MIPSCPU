@@ -19,8 +19,11 @@ package pipeline_reg_pkg;
    //***********************************//
    
    typedef struct packed{
+      regbits_t	  rt;
+      regbits_t	  rd;
       logic [15:0] imm;
-      word_t jadd;
+      logic [25:0] jaddr;
+      logic [4:0] shamt;
       word_t rdat_1;
       word_t rdat_2;
       word_t pc_plus4;
@@ -44,6 +47,8 @@ package pipeline_reg_pkg;
    //***********************************//
    
    typedef struct packed{
+      logic	  MemWrite;
+      logic	  MemRead;
       logic [15:0] imm;
       logic 	  RegWEN;
       logic 	  zero;
@@ -55,6 +60,7 @@ package pipeline_reg_pkg;
       regbits_t   RegDst_out;
       word_t	  pc_plus4;
       word_t	  rdat_2;
+      logic	  LUI_src; 
    }exmem_p;
 
    //************************************//
@@ -70,6 +76,7 @@ package pipeline_reg_pkg;
       logic 	  halt;
       word_t dload;
       word_t alu_out; 
+      logic LUI_src;
    }mem_p;
 endpackage   
 `endif   

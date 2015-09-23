@@ -13,7 +13,6 @@ interface control_unit_if;
    logic 	     LUI_src;// 1 for lui, 0 in other case
    logic [2:0] 	     portb_src;//2'b00 for port b input to alu, 2'b01 for imm, 2'b10 for shamt 	     
    logic [1:0] 	     RegDst;//2'b00 for rd, 2'b01 for rt, 2'b10 for 31 
-   logic 	     RegWEN;//
    aluop_t 	     ALU_op;//
    logic 	     MemWrite;//
    logic 	     MemRead;//   
@@ -22,10 +21,10 @@ interface control_unit_if;
    logic 	     mem_halt;
    logic 	     PC_EN;
    logic	     bra;
-
+   logic 	     rw_flag;
 modport cu (
 	    input  opcode, funct,
-	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, RegWEN, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt, bra
+	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt, bra, rw_flag
 	    );
  	     
     

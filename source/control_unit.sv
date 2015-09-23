@@ -2,12 +2,10 @@
 `include "control_unit_if.vh"
 
 module control_unit(control_unit_if.cu cuif);  
-   import cpu_types_pkg::*;
-   logic rw_flag;
-   
-   // halt logic//
+   import cpu_types_pkg::*;   
+ 
    assign cuif.PC_EN = 1;//cuif.ihit & !cuif.dhit;
-   assign cuif.RegWEN = (cuif.MemtoReg != 2'b01)? rw_flag : 0;  
+   //assign cuif.RegWEN = (cuif.MemtoReg != 2'b01)? rw_flag : 0;  
    //
    always_comb begin
       //****initialize****//
@@ -18,17 +16,17 @@ module control_unit(control_unit_if.cu cuif);
       cuif.RegDst = 2'b01;
       cuif.ALU_op = ALU_SLL;
       cuif.MemWrite = 0;
-      cuif.MemRead = 1;
+      cuif.MemRead = 0;
       cuif.MemtoReg = 2'b00;
       cuif.check_over = 0;
       cuif.mem_halt = 0;
       cuif.bra = 0;
-      rw_flag = 1;
+      cuif.rw_flag = 1;
       //******************//
       
       casez(cuif.opcode)
 	RTYPE:begin
-	   rw_flag = 1;
+	   cuif.rw_flag = 1;
 	   cuif.portb_src = 2'b00;
 	   cuif.RegDst = 2'b00;
 	  casez(cuif.funct)
@@ -74,13 +72,13 @@ module control_unit(control_unit_if.cu cuif);
 	    end
 	    JR:begin
 	       cuif.PC_src = 2'b11;
-	       rw_flag = 0;
+	       cuif.rw_flag = 0;
 	    end
 	  endcase // unique casez (cuif.funct)
 	end // case: RTYPE
 	J:begin
 	   cuif.PC_src = 2'b10;
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	end
 	JAL:begin
 	   cuif.PC_src = 2'b10;
@@ -104,14 +102,14 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.PC_src =  2'b01;
 	   cuif.bra = 0;
 	   cuif.portb_src = 2'b00;
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	end
 	BNE:begin
 	   cuif.ALU_op = ALU_SUB;
 	   cuif.PC_src = 2'b01;
 	   cuif.bra = 1;
 	   cuif.portb_src = 2'b00;
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	end
 	SLTI:begin
 	   cuif.ALU_op = ALU_SLT;
@@ -135,21 +133,22 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.ALU_op = ALU_ADD;
 	   cuif.Ext_src = 1;
 	   cuif.MemtoReg = 2'b01;
+	   cuif.MemRead = 1;
 	end
 	SW:begin
 	   cuif.ALU_op = ALU_ADD;
 	   cuif.Ext_src = 1;
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	   cuif.MemWrite = 1;
 	end
 	LL:begin
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	end
 	SC:begin
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	end
 	HALT:begin
-	   rw_flag = 0;
+	   cuif.rw_flag = 0;
 	   cuif.mem_halt = 1;
 	end
       endcase // unique casez (cuif.opcode)

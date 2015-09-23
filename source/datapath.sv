@@ -39,7 +39,7 @@ module datapath (
    //units map
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    register_file RF(CLK, nRST, rfif);
-   alu ALU(rfif.rdat1, portb_mux_out, cuif.ALU_op, negative, overflow, zero, out);
+   alu ALU(idex.rdat_1, portb_mux_out, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
    request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
 
@@ -74,8 +74,8 @@ module datapath (
    word_t luiExt;
    
    //Extender assignment
-   assign signedExt = !i_inst.imm[15] ? {16'h0000, i_inst.imm} : {16'hFFFF, i_inst.imm};
-   assign zeroExt = {16'h0000, i_inst.imm};
+   assign signedExt = !idex.imm[15] ? {16'h0000, idex.imm} : {16'hFFFF, idex.imm};
+   assign zeroExt = {16'h0000, idex.imm};
    assign jumpExt = {j_inst.addr, 2'b00};
    assign luiExt = {mem.imm, 16'h0000};
    assign shamtExt = {27'b0,r_inst.shamt};
@@ -102,11 +102,9 @@ module datapath (
       if (!nRST) begin
 	 ifid.instr <= 0;
 	 ifid.pc_plus4 <= 0;
-      end else if (ifid_en)begin
+      end else if (ifid_en) begin
 	 ifid.instr <= dpif.imemload;
 	 ifid.pc_plus4 <= PC_plus4;
-      end else begin
-	 ifid <= 0;
       end
    end
    
@@ -122,18 +120,22 @@ module datapath (
 
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
-	 idex <= 0;
-      end else if(idex_en)begin
-	 idex.imm <= i_inst.imm;
+	 idex <= 0;	 
+      end else begin // if (!nRST)
 	 idex.rdat_1 <= rfif.rdat1;
 	 idex.rdat_2 <= rfif.rdat2;
+	 idex.rt <= r_inst.rt;
+	 idex.rd <= r_inst.rd;
+	 idex.imm <= i_inst.imm;
+	 idex.shamt <= r_inst.shamt;
+	 idex.jaddr <= j_inst.addr;
 	 idex.pc_plus4 <= ifid.pc_plus4;
 	 idex.bra <= cuif.bra;
 	 idex.LUI_src <= cuif.LUI_src;
 	 idex.Ext_src <= cuif.Ext_src;
 	 idex.portb_src <= cuif.portb_src;
 	 idex.PC_src <= cuif.PC_src;
-	 idex.RegWEN <= cuif.RegWEN;
+	 idex.RegWEN <= (cuif.MemtoReg != 2'b01)? cuif.rw_flag : 1;  
 	 idex.RegDst <= cuif.RegDst;
 	 idex.ALU_op <= cuif.ALU_op;
 	 idex.MemWrite <= cuif.MemWrite;
@@ -142,8 +144,7 @@ module datapath (
 	 idex.check_over <= cuif.check_over;
 	 idex.mem_halt <= cuif.mem_halt;
       end // if (idex_en)
-   end // always_ff @
-     
+   end // always_ff @  
    
    //***********************************//
    //        HALT Reg and logic
@@ -164,7 +165,19 @@ module datapath (
 
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
-	 exmem <= 0;
+	 exmem.imm <= 0;
+	 exmem.RegWEN <= 0;
+	 exmem.zero <= 0;
+	 exmem.overflow <= 0;
+	 exmem.bra <= 0;
+	 exmem.MemtoReg <= 0;
+	 exmem.MemRead <= 0;
+	 exmem.MemWrite <= 0;
+	 exmem.alu_out <= 0;
+	 exmem.RegDst_out <= 0;
+	 exmem.pc_plus4 <= 0;
+	 exmem.rdat_2 <= 0;
+	 exmem.LUI_src <= 0; 
       end else if (exmem_en) begin
 	 exmem.imm <= idex.imm;
 	 exmem.RegWEN <= idex.RegWEN;
@@ -172,13 +185,16 @@ module datapath (
 	 exmem.overflow <= overflow;
 	 exmem.bra <= idex.bra;
 	 exmem.MemtoReg <= idex.MemtoReg;
+	 exmem.MemRead <= idex.MemRead;
+	 exmem.MemWrite <= idex.MemWrite;
 	 exmem.alu_out <= out;
-	 exmem.dload <= dpif.dmemload;
 	 exmem.RegDst_out <= RWD_out;
 	 exmem.pc_plus4 <= idex.pc_plus4;
 	 exmem.rdat_2 <= idex.rdat_2;
+	 exmem.LUI_src <= idex.LUI_src;
       end // else: !if(!nRST)
    end // always_ff @ (posedge CLK, negedge n_RST)
+   assign exmem.dload = dpif.dmemload;
 
    //***********************************//
    //       Memory Output Reg
@@ -195,6 +211,7 @@ module datapath (
 	 mem.RegDst_out <= exmem.RegDst_out;
 	 mem.pc_plus4 <= exmem.pc_plus4;
 	 mem.imm <= exmem.imm;
+	 mem.LUI_src <= idex.LUI_src;
       end
    end // always_ff @ (posedge CLK, negedge nRST)
    
@@ -203,10 +220,10 @@ module datapath (
 
    //Reg Write Dst Mux
    always_comb begin
-      RWD_out = r_inst.rd;
+      RWD_out = idex.rd;
       casez(idex.RegDst)
 	2'b01:begin
-	   RWD_out = r_inst.rt;
+	   RWD_out = idex.rt;
 	end
 	2'b10:begin
 	   RWD_out = 5'd31;
@@ -230,7 +247,7 @@ module datapath (
 
    //LUI Mux
    word_t IntoMem;
-   assign IntoMem = cuif.LUI_src? luiExt : IntoLUI; 
+   assign IntoMem = mem.LUI_src? luiExt : IntoLUI; 
    
    //Extender Mux
    word_t extended_imm;
@@ -280,8 +297,8 @@ module datapath (
    assign dpif.halt = mem.halt;
    assign dpif.imemREN = imemREN;
    assign dpif.imemaddr = PC;
-   assign dpif.dmemREN = dmemREN;
-   assign dpif.dmemWEN = dmemWEN;
+   assign dpif.dmemREN = exmem.MemRead;
+   assign dpif.dmemWEN = exmem.MemWrite;
    assign dpif.dmemstore = exmem.rdat_2;
    assign dpif.dmemaddr = exmem.alu_out;
    //*****************************************************************************//
