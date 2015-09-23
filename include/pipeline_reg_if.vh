@@ -11,7 +11,7 @@ interface pipline_reg_if;
    
    typedef struct packed{
       word_t instr;
-      word_t pc;
+      word_t pc_plus4;
       }ifid_p;
 
    //************************************//
@@ -21,9 +21,9 @@ interface pipline_reg_if;
    typedef struct packed{
       logic [15:0] imm;
       word_t jadd;
-      word_t rdata_1;
-      word_t rdata_2;
-      word_t pc;
+      word_t rdat_1;
+      word_t rdat_2;
+      word_t pc_plus4;
       logic [1:0] bra// 2'b00 for no branch, 2'b01 for BNE, 2'b10 for BEQ 	  
       logic 	  LUI_src;
       logic 	  Ext_src;
@@ -44,8 +44,7 @@ interface pipline_reg_if;
    //***********************************//
    
    typedef struct packed{
-      word_t imm;
-      word_t jadd;
+      logic [15:0] imm;
       logic 	  RegWEN;
       logic 	  zero;
       logic 	  overflow;
@@ -54,8 +53,8 @@ interface pipline_reg_if;
       word_t	  alu_out;
       word_t 	  dload;
       regbits_t   RegDst_out;
-      logic 	  halt;
-      word_t	pc;  
+      word_t	  pc_plus4;
+      word_t	  rdat2;
    }exmem_p;
 
    //************************************//
@@ -63,11 +62,14 @@ interface pipline_reg_if;
    //***********************************//
 
    typedef struct packed{
+      logic [15:0]imm;
+      word_t	  pc;
       logic [1:0] MemtoReg;
+      regbits_t   RegDst_out
       logic 	  RegWEN;
       logic 	  halt
       word_t dload;
-      word_t alu_out;
+      word_t alu_out; 
    }mem_p;
    
    

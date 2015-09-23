@@ -3,14 +3,11 @@
 
 module control_unit(control_unit_if.cu cuif);  
    import cpu_types_pkg::*;
-   logic check_over;
-   logic mem_halt;
    logic rw_flag;
    
    // halt logic//
-   assign cuif.halt = (check_over & cuif.Overflow) | mem_halt;
-   assign cuif.PC_EN = cuif.ihit & !cuif.dhit;
-   assign cuif.RegWEN = (cuif.MemtoReg != 2'b01)? rw_flag : cuif.dhit? rw_flag : 0;  
+   assign cuif.PC_EN = 1;//cuif.ihit & !cuif.dhit;
+   assign cuif.RegWEN = (cuif.MemtoReg != 2'b01)? rw_flag : 0;  
    //
    always_comb begin
       //****initialize****//
@@ -23,8 +20,8 @@ module control_unit(control_unit_if.cu cuif);
       cuif.MemWrite = 0;
       cuif.MemRead = 1;
       cuif.MemtoReg = 2'b00;
-      check_over = 0;
-      mem_halt = 0;
+      cuif.check_over = 0;
+      cuif.mem_halt = 0;
       rw_flag = 1;
       //******************//
       
@@ -44,14 +41,14 @@ module control_unit(control_unit_if.cu cuif);
 	    end
 	    ADD:begin
 	       cuif.ALU_op = ALU_ADD;
-	       check_over = 1;
+	       cuif.check_over = 1;
 	    end
 	    ADDU:begin
 	       cuif.ALU_op = ALU_ADD;
 	    end
 	    SUB:begin
 	       cuif.ALU_op = ALU_SUB;
-	       check_over = 1;
+	       cuif.check_over = 1;
 	    end
 	    SUBU:begin
 	       cuif.ALU_op = ALU_SUB;
@@ -92,7 +89,7 @@ module control_unit(control_unit_if.cu cuif);
 	ADDI:begin
 	   cuif.ALU_op = ALU_ADD;
 	   cuif.Ext_src = 1;
-	   check_over = 1;
+	   cuif.check_over = 1;
 	end
 	ADDIU:begin
 	   cuif.ALU_op = ALU_ADD;
@@ -116,7 +113,7 @@ module control_unit(control_unit_if.cu cuif);
 	SLTI:begin
 	   cuif.ALU_op = ALU_SLT;
 	   cuif.Ext_src = 1;
-	   check_over = 1;
+	   cuif.check_over = 1;
 	end
 	SLTIU:begin
 	   cuif.ALU_op = ALU_SLT;
@@ -150,7 +147,7 @@ module control_unit(control_unit_if.cu cuif);
 	end
 	HALT:begin
 	   rw_flag = 0;
-	   mem_halt = 1;
+	   cuif.mem_halt = 1;
 	end
       endcase // unique casez (cuif.opcode)
    end

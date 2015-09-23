@@ -42,7 +42,7 @@ module datapath (
    register_file RF(CLK, nRST, rfif);
    alu ALU(rfif.rdat1, portb_mux_out, cuif.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
-   request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, cuif.MemtoReg, cuif.MemWrite, dmemREN, dmemWEN, imemREN);
+   request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
 
    //pipeline reg
    ifid_p ifid;
@@ -75,7 +75,7 @@ module datapath (
    assign signedExt = !i_inst.imm[15] ? {16'h0000, i_inst.imm} : {16'hFFFF, i_inst.imm};
    assign zeroExt = {16'h0000, i_inst.imm};
    assign jumpExt = {j_inst.addr, 2'b00};
-   assign luiExt = {i_inst.imm, 16'h0000};
+   assign luiExt = {mem.imm, 16'h0000};
    assign shamtExt = {27'b0,r_inst.shamt};
          
    //***********************************I-Fetch state*************************************//
@@ -102,16 +102,14 @@ module datapath (
 	 ifid.pc <= 0;
       end else if (ifid_en)begin
 	 ifid.instr <= dpif.imemload;
-	 ifid.pc <= PC;
+	 ifid.pc_plus4 <= PC_plus4;
+      end else begin
+	 ifid <= 0;
       end
    end
    
 
    //***********************************Control Block************************************//
-   assign cuif.Zero = zero;
-   assign cuif.Overflow = overflow;
-   assign cuif.ihit = dpif.ihit;
-   assign cuif.dhit = dpif.dhit;
    assign cuif.opcode = r_inst.opcode;
    assign cuif.funct = r_inst.funct;
    //***********************************************************************************//
@@ -126,9 +124,9 @@ module datapath (
 	 idex <= 0;
       end else if(idex_en)begin
 	 idex.imm <= i_inst.imm;
-	 idex.rdata_1 <= rfif.rdat1;
-	 idex.rdata_2 <= rfif.rdat2;
-	 idex.pc <= pc;
+	 idex.rdat_1 <= rfif.rdat1;
+	 idex.rdat_2 <= rfif.rdat2;
+	 idex.pc_plus4 <= pc_plus4;
 	 idex.bar <= cuif.bar;
 	 idex.LUI_src <= cuif.LUI_src;
 	 idex.Ext_src <= cuif.Ext_src;
@@ -157,15 +155,56 @@ module datapath (
 	 halt_reg <= halt;
       end
    end
-   assign halt = (check_over & overflow) | mem_halt;
+   assign halt = (check_over & overflow) | idex.mem_halt;
 
+   //***********************************//
+   //Memory Operation / Memory Output Reg
+   //**********************************//
+
+   always_ff @(posedge CLK, negedge nRST) begin
+      if (!nRST) begin
+	 exmem <= 0;
+      end else if (exmem_en) begin
+	 exmem.imm <= idex.imm;
+	 exmem.RegWEN <= idex.RegWEN;
+	 exmem.zero <= zero;
+	 exmem.overflow <= overflow;
+	 exmem.bar <= idex.bar;
+	 exmem.MemtoReg <= idex.MemtoReg;
+	 exmem.alu_out <= out;
+	 exmem.dload <= dpif.dmemload;
+	 exmem.RegDst_out <= RWD_out;
+	 exmem.pc_plus4 <= idex.pc_plus4;
+	 exmem.rdat2 <= idex.rdat2;
+      end // else: !if(!nRST)
+   end // always_ff @ (posedge CLK, negedge n_RST)
+
+   //***********************************//
+   //       Memory Output Reg
+   //**********************************//
+   always_ff @(posedge CLK, negedge nRST) begin
+      if (!nRST) begin
+	 mem <= 0;
+      end else if (mem_en) begin
+	 mem.MemtoReg <= exmem.MemtoReg;
+	 mem.RegWEN <= exmem.RegWEN;
+	 mem.halt <= halt;
+	 mem.dload <= exmem.dload;
+	 mem.alu_out <= exmem.alu_out;
+	 mem.RegDst_out <= exmem.RegDst_out;
+	 mem.pc_plus4 <= exmem.pc_plus4;
+	 mem.imm <= exmem.imm;
+      end
+   end // always_ff @ (posedge CLK, negedge nRST)
+   
+   
    //********************************ALU MUX SET*****************************************//
 
    //Reg Write Dst Mux
    regbits_t RWD_out;
    always_comb begin
       RWD_out = r_inst.rd;
-      casez(cuif.RegDst)
+      casez(idex.RegDst)
 	2'b01:begin
 	   RWD_out = r_inst.rt;
 	end
@@ -174,16 +213,17 @@ module datapath (
 	end
       endcase // casez (CU.RegDst)
    end // always_comb
+   
    //Reg Write Port Mux
    word_t IntoLUI;
    always_comb begin
-      IntoLUI = out;
-      casez(cuif.MemtoReg)
+      IntoLUI = mem.alu_out;
+      casez(mem.MemtoReg)
 	2'b01:begin
-	   IntoLUI = dpif.dmemload;
+	   IntoLUI = mem.dload;
 	end
 	2'b10:begin
-	   IntoLUI = PC_plus4;
+	   IntoLUI = mem.pc_plus4;
 	end
       endcase // casez (MemtoReg)
    end // always_comb
@@ -194,12 +234,12 @@ module datapath (
    
    //Extender Mux
    word_t extended_imm;
-   assign extended_imm = cuif.Ext_src? signedExt : zeroExt;
+   assign extended_imm = idex.Ext_src? signedExt : zeroExt;
 
    //ALU Port b select Mux
    always_comb begin
       portb_mux_out = rfif.rdat2;
-      casez(cuif.portb_src)
+      casez(idex.portb_src)
 	2'b01:begin
 	   portb_mux_out = extended_imm;
 	end
@@ -214,7 +254,7 @@ module datapath (
    assign PC_next = PC_out;
    always_comb begin
       PC_out = PC_plus4;
-      casez(cuif.PC_src)
+      casez(idex.PC_src)
 	2'b01:begin
 	   PC_out = PC_branch;
 	end
@@ -229,7 +269,7 @@ module datapath (
 
    //************************************Register File***********************************//
    assign rfif.WEN = cuif.RegWEN;
-   assign rfif.wsel = RWD_out;
+   assign rfif.wsel = mem.RegDst_out;
    assign rfif.rsel1 = r_inst.rs;
    assign rfif.rsel2 = r_inst.rt;
    assign rfif.wdat = IntoMem;
@@ -237,13 +277,13 @@ module datapath (
    //************************************************************************************//
 
    //*******************************I/O assignment*****************************
-   assign dpif.halt = halt_reg;
+   assign dpif.halt = mem.halt;
    assign dpif.imemREN = imemREN;
    assign dpif.imemaddr = PC;
    assign dpif.dmemREN = dmemREN;
    assign dpif.dmemWEN = dmemWEN;
-   assign dpif.dmemstore = rfif.rdat2;
-   assign dpif.dmemaddr = out;
+   assign dpif.dmemstore = exmem.rdat2;
+   assign dpif.dmemaddr = exmem.alu_out;
    //*****************************************************************************//
 endmodule
 
