@@ -16,6 +16,7 @@
 `include "register_file_if.vh"
 `include "pipeline_reg_pkg.vh"
 `include "control_unit_if.vh"
+`include "hazard_unit_if.vh"
 
 module datapath (
 		 input logic CLK, nRST,
@@ -29,6 +30,7 @@ module datapath (
    parameter PC_INIT = 0;
    
    //if import
+   hazard_unit_if huif();
    register_file_if rfif();
    control_unit_if cuif();
 
@@ -37,12 +39,19 @@ module datapath (
    word_t PC_next, PC, out, portb_mux_out;
    
    //units map
+   hazard_unit HU1(huif);
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    register_file RF(CLK, nRST, rfif);
    alu ALU(idex.rdat_1, portb_mux_out, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
    request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
 
+   //hazard assignment
+   assign huif.rsel_1 = rfif.rsel1;
+   assign huif.rsel_2 = rfif.rsel2;
+   assign huif.WEN = rfif.WEN;
+   assign huif.wsel = rfif.wsel;
+   
    //pipeline reg
    ifid_p ifid;
    idex_p idex;
@@ -50,14 +59,36 @@ module datapath (
    mem_p mem;
 
    //flush signal
-   logic 		     ifid_en = 1;
+   logic 		     ifid_en;
    logic 		     idex_en = 1;
    logic 		     exmem_en = 1;
    logic 		     mem_en = 1;
 
+   assign ifid_en = PC_en;
+   
    //reg out portal
    regbits_t RWD_out;
- 
+
+
+
+   //***********************************Hazard Unit************************************//
+   /***********************************/
+   //          Hazard Mux             //
+   //*********************************/
+
+   /*word_t alu_porta, alu_portb;
+   
+   always_comb begin // alu port hazard mux
+      alu_porta = idex.rdat_1;
+      alu_portb = portb_mux_out;
+      casez(huif.rf_hazard_src)
+	
+   end*/
+   
+
+
+   //**********************************************************************************//
+   
    //Decode Instrction
    j_t j_inst;
    i_t i_inst;
@@ -85,7 +116,7 @@ module datapath (
    word_t PC_branch;
    word_t PC_reg;
    word_t PC_jump;
-   assign PC_en = cuif.PC_EN;
+   assign PC_en = dpif.ihit & !dpif.dhit;
    
    //PC caculation
    assign PC_plus4 = PC + 4;
@@ -105,6 +136,9 @@ module datapath (
       end else if (ifid_en) begin
 	 ifid.instr <= dpif.imemload;
 	 ifid.pc_plus4 <= PC_plus4;
+      end else begin
+	 ifid.instr <= 0;
+	 ifid.pc_plus4 <= 0;
       end
    end
    
@@ -211,7 +245,7 @@ module datapath (
 	 mem.RegDst_out <= exmem.RegDst_out;
 	 mem.pc_plus4 <= exmem.pc_plus4;
 	 mem.imm <= exmem.imm;
-	 mem.LUI_src <= idex.LUI_src;
+	 mem.LUI_src <= exmem.LUI_src;
       end
    end // always_ff @ (posedge CLK, negedge nRST)
    
