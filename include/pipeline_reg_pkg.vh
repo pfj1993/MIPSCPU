@@ -47,6 +47,7 @@ package pipeline_reg_pkg;
    //***********************************//
    
    typedef struct packed{
+      logic 	  halt; 	  
       logic	  MemWrite;
       logic	  MemRead;
       logic [15:0] imm;

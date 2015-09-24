@@ -35,7 +35,7 @@ module datapath (
    control_unit_if cuif();
 
    //port init
-   logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt;
+   logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt, halt_reg;
    word_t PC_next, PC, out, portb_mux_out;
    
    //units map
@@ -60,12 +60,15 @@ module datapath (
 
    //flush signal
    logic 		     ifid_en;
-   logic 		     idex_en = 1;
-   logic 		     exmem_en = 1;
-   logic 		     mem_en = 1;
+   logic 		     idex_en;
+   logic 		     exmem_en;
+   logic 		     mem_en;
 
    assign ifid_en = PC_en;
-   
+   assign idex_en = ~halt_reg;
+   assign exmem_en = ~halt_reg;
+   assign mem_en = ~halt_reg;
+		    
    //reg out portal
    regbits_t RWD_out;
 
@@ -109,14 +112,14 @@ module datapath (
    assign zeroExt = {16'h0000, idex.imm};
    assign jumpExt = {j_inst.addr, 2'b00};
    assign luiExt = {mem.imm, 16'h0000};
-   assign shamtExt = {27'b0,r_inst.shamt};
+   assign shamtExt = {27'b0,idex.shamt};
          
    //***********************************I-Fetch state*************************************//
    word_t PC_plus4;
    word_t PC_branch;
    word_t PC_reg;
    word_t PC_jump;
-   assign PC_en = dpif.ihit & !dpif.dhit;
+   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg;
    
    //PC caculation
    assign PC_plus4 = PC + 4;
@@ -183,15 +186,14 @@ module datapath (
    //***********************************//
    //        HALT Reg and logic
    //**********************************//
-   logic halt_reg;
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
 	 halt_reg <= 0;
       end else begin
-	 halt_reg <= halt;
+	 halt_reg <= mem.halt;
       end
    end
-   assign halt = (cuif.check_over & overflow) | idex.mem_halt;
+   assign halt = (idex.check_over & overflow) | idex.mem_halt;
 
    //***********************************//
    //Memory Operation / Memory Output Reg
@@ -211,7 +213,8 @@ module datapath (
 	 exmem.RegDst_out <= 0;
 	 exmem.pc_plus4 <= 0;
 	 exmem.rdat_2 <= 0;
-	 exmem.LUI_src <= 0; 
+	 exmem.LUI_src <= 0;
+	 exmem.halt <= 0;
       end else if (exmem_en) begin
 	 exmem.imm <= idex.imm;
 	 exmem.RegWEN <= idex.RegWEN;
@@ -226,6 +229,7 @@ module datapath (
 	 exmem.pc_plus4 <= idex.pc_plus4;
 	 exmem.rdat_2 <= idex.rdat_2;
 	 exmem.LUI_src <= idex.LUI_src;
+	 exmem.halt <= halt;
       end // else: !if(!nRST)
    end // always_ff @ (posedge CLK, negedge n_RST)
    assign exmem.dload = dpif.dmemload;
@@ -239,7 +243,7 @@ module datapath (
       end else if (mem_en) begin
 	 mem.MemtoReg <= exmem.MemtoReg;
 	 mem.RegWEN <= exmem.RegWEN;
-	 mem.halt <= halt;
+	 mem.halt <= exmem.halt;
 	 mem.dload <= exmem.dload;
 	 mem.alu_out <= exmem.alu_out;
 	 mem.RegDst_out <= exmem.RegDst_out;
@@ -289,7 +293,7 @@ module datapath (
 
    //ALU Port b select Mux
    always_comb begin
-      portb_mux_out = rfif.rdat2;
+      portb_mux_out = idex.rdat_2;
       casez(idex.portb_src)
 	2'b01:begin
 	   portb_mux_out = extended_imm;
@@ -328,7 +332,7 @@ module datapath (
    //************************************************************************************//
 
    //*******************************I/O assignment*****************************
-   assign dpif.halt = mem.halt;
+   assign dpif.halt = halt_reg;
    assign dpif.imemREN = imemREN;
    assign dpif.imemaddr = PC;
    assign dpif.dmemREN = exmem.MemRead;
