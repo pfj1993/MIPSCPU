@@ -12,14 +12,14 @@ module br_prediction(
 					    NTAKE_LESS,
 					    NTAKE
 					    }takeState;
-   takeState    BTB[3:0];
+   takeState    BTB[15:0];
    takeState    BTB_next;
-   word_t       target_add[3:0];
+   word_t       target_add[15:0];
    
    always_ff @(posedge CLK, negedge nRST) begin //table update
       if (!nRST) begin
 	 BTB <= '{default:NTAKE};
-	 target_add <= '{default:'0};
+	 target_add <= '{default:0};
       end else if(bpif.br) begin
 	 BTB[bpif.index_update] <= BTB_next;
 	 target_add[bpif.index_update] <= bpif.br_target_I;

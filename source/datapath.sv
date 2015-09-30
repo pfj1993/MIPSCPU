@@ -39,7 +39,8 @@ module datapath (
    //port init
    logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt, halt_reg;
    word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
-   
+   logic [2:0] 		     PC_src;
+   word_t PC_plus4, PC_branch, PC_reg, PC_jump;
    //units map
 
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
@@ -50,12 +51,6 @@ module datapath (
    hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, huif);
    br_prediction BP(CLK, nRST, bpif);
 
-   //Branch Prediction assignment
-   assign bpif.br = 0;
-   assign bpif.index_I = 0;
-   assign bpif.index_update = 0;
-   assign bpif.br_taken = 0;
-   assign bpif.br_target_I = 0;
    
    //pipeline reg
    ifid_p ifid;
@@ -66,14 +61,14 @@ module datapath (
    //flush signal
    logic 		     ifid_en, idex_en, exmem_en, mem_en;
    logic 		     ifid_flush, idex_flush, exmem_flush;
-   logic 		     jump_flush, branch_flush;
+   logic 		     oneState_flush, threeStates_flush;
 
    assign ifid_en = ~halt_reg;
-   assign ifid_flush = ~PC_en | jump_flush | branch_flush ;
+   assign ifid_flush = ~PC_en | oneState_flush | threeStates_flush ;
    assign idex_en = ~halt_reg;
-   assign idex_flush = branch_flush;
+   assign idex_flush = threeStates_flush;
    assign exmem_en = ~halt_reg;
-   assign exmem_flush = branch_flush;
+   assign exmem_flush = threeStates_flush;
    assign mem_en = ~halt_reg;
 		    
    //reg out portal
@@ -81,11 +76,33 @@ module datapath (
    word_t IntoMem, IntoLUI;;
 
    //*********************************PC Select Logic*******************************//
-   
-   
+   logic 		     predict_fail, br;
+   always_comb begin
+      PC_src = 3'b000;
+      threeStates_flush = 0;
+      oneState_flush = 0;
+      
+      if(predict_fail) begin
+	 threeStates_flush = 1;
+	 PC_src = br? 3'b001 : 3'b101;	 
+      end else if(cuif.PC_src == 2'b11 | cuif.PC_src == 2'b10) begin
+	 oneState_flush = 1;
+	 PC_src = (cuif.PC_src  == 2'b11)? 3'b011 : 3'b010;
+      end else if(cuif.bra & bpif.predict) begin //prediction
+	 oneState_flush = 1;
+	 PC_src = 3'b100;
+      end	
+   end
 
-   assign jump_flush = 0;
-   assign branch_flush = 0;
+   //**********************************************************************************//
+   //*********************************Branch Predict Block*******************************//
+   logic taken;
+   assign bpif.br = (exmem.bra != 0);
+   assign bpif.index_I = i_inst.imm[5:2];
+   assign bpif.index_update = exmem.index;
+   assign bpif.br_taken = br;
+   assign bpif.br_target_I = PC_branch;
+
    //**********************************************************************************//
    
    //Decode Instrction
@@ -107,18 +124,40 @@ module datapath (
    assign shamtExt = {27'b0,idex.shamt};
    assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
-   //***********************************I-Fetch state*************************************//
-   word_t PC_plus4;
-   word_t PC_branch;
-   word_t PC_reg;
-   word_t PC_jump;
+   //***********************************PC Block*************************************//
    assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg & ~huif.stall;
-   
+
+   word_t 		     pc_temp;
+   assign pc_temp = ifid.pc_plus4 - 4;
    //PC caculation
    assign PC_plus4 = PC + 4;
-   assign PC_jump = {PC[31:28], jumpExt};
+   assign PC_jump = {pc_temp[31:28], jumpExt};
    assign PC_branch = exmem.pc_plus4 + (branchExt << 2);
    assign PC_reg = rfif.rdat1;
+   //PC mux
+   word_t PC_out;
+   assign PC_next = PC_out;
+   always_comb begin
+      PC_out = PC_plus4;
+      casez(PC_src)
+	3'b001:begin
+	   PC_out = PC_branch;
+	end
+	3'b010:begin
+	   PC_out = PC_jump;
+	end
+	3'b011:begin
+	   PC_out = PC_reg;
+	end
+	3'b100:begin
+	   PC_out = bpif.br_target_O;
+	end
+	3'b101:begin
+	   PC_out = exmem.pc_plus4;
+	end
+      endcase
+   end // always_comb
+   
    //*************************************************************************************//
 
    //************************************//
@@ -169,7 +208,9 @@ module datapath (
 	    idex.jaddr <= j_inst.addr;
 	    idex.pc_plus4 <= ifid.pc_plus4;
 	    idex.bra <= cuif.bra;
-	    idex.index_update <= bpif.index_O;
+	    idex.predict <= bpif.predict;
+	    idex.index <= bpif.index_O;
+	    idex.br_target <= bpif.br_target_O;
 	    idex.LUI_src <= cuif.LUI_src;
 	    idex.Ext_src <= cuif.Ext_src;
 	    idex.portb_src <= cuif.portb_src;
@@ -211,7 +252,6 @@ module datapath (
 	 exmem.zero <= 0;
 	 exmem.overflow <= 0;
 	 exmem.bra <= 0;
-	 exmem.index_update <= 0;
 	 exmem.MemtoReg <= 0;
 	 exmem.MemRead <= 0;
 	 exmem.MemWrite <= 0;
@@ -220,6 +260,9 @@ module datapath (
 	 exmem.pc_plus4 <= 0;
 	 exmem.rdat_2 <= 0;
 	 exmem.halt <= 0;
+	 exmem.predict <= 0;
+	 exmem.index <= 0;
+	 exmem.br_target <= 0;
       end else if (exmem_en) begin // if (!nRST)
 	 if (exmem_flush) begin
 	    exmem.imm <= 0;
@@ -227,7 +270,6 @@ module datapath (
 	    exmem.zero <= 0;
 	    exmem.overflow <= 0;
 	    exmem.bra <= 0;
-	    exmem.index_update <= 0;
 	    exmem.MemtoReg <= 0;
 	    exmem.MemRead <= 0;
 	    exmem.MemWrite <= 0;
@@ -236,13 +278,18 @@ module datapath (
 	    exmem.pc_plus4 <= 0;
 	    exmem.rdat_2 <= 0;
 	    exmem.halt <= 0;
+	    exmem.predict <= 0;
+	    exmem.index <= 0;
+	    exmem.br_target <= 0;
 	 end else begin 
 	    exmem.imm <= idex.imm;
 	    exmem.RegWEN <= idex.RegWEN;
 	    exmem.zero <= zero;
 	    exmem.overflow <= overflow;
 	    exmem.bra <= idex.bra;
-	    exmem.index_update <= idex.index_update;
+	    exmem.predict <= idex.predict;
+	    exmem.index <= idex.index;
+	    exmem.br_target <= idex.br_target;
 	    exmem.MemtoReg <= idex.MemtoReg;
 	    exmem.MemRead <= idex.MemRead;
 	    exmem.MemWrite <= idex.MemWrite;
@@ -256,6 +303,28 @@ module datapath (
    end // always_ff @ (posedge CLK, negedge n_RST)
    assign exmem.dload = dpif.dmemload;
 
+
+  //***********************************Branch Caculation************************************//
+   always_comb begin
+      br = 0;
+      casez(exmem.bra)
+	2'b01:begin
+	   br = exmem.zero? 1 : 0;
+	end
+	2'b10: begin
+	   br = ~exmem.zero? 1 : 0;
+	end //
+      endcase // casez (exme.bra)
+      if ((((br == exmem.predict) & (br == 1)) & (PC_branch == exmem.br_target)) 
+	  | ((br == exmem.predict) & (br == 0))) begin
+	 predict_fail = 0;
+      end else begin
+	 predict_fail = 1;
+      end
+   end // always_comb begin
+      
+   //***********************************************************************************//
+   
    //***********************************//
    //       Memory Output Reg
    //**********************************//
@@ -361,24 +430,6 @@ module datapath (
 	   IntoLUI = shamtExt;
 	end
       endcase // casez (CU.portb_scr)
-   end // always_comb
-
-   //PC mux
-   word_t PC_out;
-   assign PC_next = PC_out;
-   always_comb begin
-      PC_out = PC_plus4;
-      casez(idex.PC_src)
-	2'b01:begin
-	   PC_out = PC_branch;
-	end
-	2'b10:begin
-	   PC_out = PC_jump;
-	end
-	2'b11:begin
-	   PC_out = PC_reg;
-	end
-      endcase
    end // always_comb
 
    //************************************Register File***********************************//

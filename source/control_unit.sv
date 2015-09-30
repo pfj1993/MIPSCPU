@@ -100,14 +100,14 @@ module control_unit(control_unit_if.cu cuif);
 	BEQ:begin
 	   cuif.ALU_op = ALU_SUB;
 	   cuif.PC_src =  2'b01;
-	   cuif.bra = 0;
+	   cuif.bra = 2'b01;
 	   cuif.portb_src = 2'b00;
 	   cuif.rw_flag = 0;
 	end
 	BNE:begin
 	   cuif.ALU_op = ALU_SUB;
 	   cuif.PC_src = 2'b01;
-	   cuif.bra = 1;
+	   cuif.bra = 2'b10;
 	   cuif.portb_src = 2'b00;
 	   cuif.rw_flag = 0;
 	end
