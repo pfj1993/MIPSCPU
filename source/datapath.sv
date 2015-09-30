@@ -17,6 +17,7 @@
 `include "pipeline_reg_pkg.vh"
 `include "control_unit_if.vh"
 `include "hazard_unit_if.vh"
+`include "branch_prediction_if.vh"
 
 module datapath (
 		 input logic CLK, nRST,
@@ -33,24 +34,28 @@ module datapath (
    hazard_unit_if huif();
    register_file_if rfif();
    control_unit_if cuif();
+   branch_prediction_if bpif();
 
    //port init
    logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt, halt_reg;
-   word_t PC_next, PC, out, portb_mux_out;
+   word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
    
    //units map
-   hazard_unit HU1(huif);
+
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    register_file RF(CLK, nRST, rfif);
-   alu ALU(idex.rdat_1, portb_mux_out, idex.ALU_op, negative, overflow, zero, out);
+   alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
    request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
+   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, huif);
+   br_prediction BP(CLK, nRST, bpif);
 
-   //hazard assignment
-   assign huif.rsel_1 = rfif.rsel1;
-   assign huif.rsel_2 = rfif.rsel2;
-   assign huif.WEN = rfif.WEN;
-   assign huif.wsel = rfif.wsel;
+   //Branch Prediction assignment
+   assign bpif.br = 0;
+   assign bpif.index_I = 0;
+   assign bpif.index_update = 0;
+   assign bpif.br_taken = 0;
+   assign bpif.br_target_I = 0;
    
    //pipeline reg
    ifid_p ifid;
@@ -59,37 +64,28 @@ module datapath (
    mem_p mem;
 
    //flush signal
-   logic 		     ifid_en;
-   logic 		     idex_en;
-   logic 		     exmem_en;
-   logic 		     mem_en;
+   logic 		     ifid_en, idex_en, exmem_en, mem_en;
+   logic 		     ifid_flush, idex_flush, exmem_flush;
+   logic 		     jump_flush, branch_flush;
 
-   assign ifid_en = PC_en;
+   assign ifid_en = ~halt_reg;
+   assign ifid_flush = ~PC_en | jump_flush | branch_flush ;
    assign idex_en = ~halt_reg;
+   assign idex_flush = branch_flush;
    assign exmem_en = ~halt_reg;
+   assign exmem_flush = branch_flush;
    assign mem_en = ~halt_reg;
 		    
    //reg out portal
    regbits_t RWD_out;
+   word_t IntoMem, IntoLUI;;
 
-
-
-   //***********************************Hazard Unit************************************//
-   /***********************************/
-   //          Hazard Mux             //
-   //*********************************/
-
-   /*word_t alu_porta, alu_portb;
+   //*********************************PC Select Logic*******************************//
    
-   always_comb begin // alu port hazard mux
-      alu_porta = idex.rdat_1;
-      alu_portb = portb_mux_out;
-      casez(huif.rf_hazard_src)
-	
-   end*/
    
 
-
+   assign jump_flush = 0;
+   assign branch_flush = 0;
    //**********************************************************************************//
    
    //Decode Instrction
@@ -101,30 +97,27 @@ module datapath (
    assign r_inst = r_t'(ifid.instr);
      
    //***********************************Extender*********************************
-   word_t signedExt;
-   word_t zeroExt;
-   logic [27:0]jumpExt;
-   word_t shamtExt;
-   word_t luiExt;
-   
+   word_t signedExt, zeroExt, shamtExt, luiExt, branchExt;
+   logic [27:0] 	     jumpExt;
    //Extender assignment
    assign signedExt = !idex.imm[15] ? {16'h0000, idex.imm} : {16'hFFFF, idex.imm};
    assign zeroExt = {16'h0000, idex.imm};
    assign jumpExt = {j_inst.addr, 2'b00};
-   assign luiExt = {mem.imm, 16'h0000};
+   assign luiExt = {idex.imm, 16'h0000};
    assign shamtExt = {27'b0,idex.shamt};
+   assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
    //***********************************I-Fetch state*************************************//
    word_t PC_plus4;
    word_t PC_branch;
    word_t PC_reg;
    word_t PC_jump;
-   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg;
+   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg & ~huif.stall;
    
    //PC caculation
    assign PC_plus4 = PC + 4;
    assign PC_jump = {PC[31:28], jumpExt};
-   assign PC_branch = PC_plus4 + (signedExt << 2);
+   assign PC_branch = exmem.pc_plus4 + (branchExt << 2);
    assign PC_reg = rfif.rdat1;
    //*************************************************************************************//
 
@@ -134,14 +127,17 @@ module datapath (
 
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
-	 ifid.instr <= 0;
-	 ifid.pc_plus4 <= 0;
+	 ifid <= 0;
       end else if (ifid_en) begin
-	 ifid.instr <= dpif.imemload;
-	 ifid.pc_plus4 <= PC_plus4;
+	 if (ifid_flush) begin
+	    ifid.instr <= 0;
+	    ifid.pc_plus4 <= 0;
+	 end else begin
+	    ifid.instr <= dpif.imemload;
+	    ifid.pc_plus4 <= PC_plus4;
+	 end
       end else begin
-	 ifid.instr <= 0;
-	 ifid.pc_plus4 <= 0;
+	 ifid <= ifid;
       end
    end
    
@@ -158,29 +154,38 @@ module datapath (
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
 	 idex <= 0;	 
-      end else begin // if (!nRST)
-	 idex.rdat_1 <= rfif.rdat1;
-	 idex.rdat_2 <= rfif.rdat2;
-	 idex.rt <= r_inst.rt;
-	 idex.rd <= r_inst.rd;
-	 idex.imm <= i_inst.imm;
-	 idex.shamt <= r_inst.shamt;
-	 idex.jaddr <= j_inst.addr;
-	 idex.pc_plus4 <= ifid.pc_plus4;
-	 idex.bra <= cuif.bra;
-	 idex.LUI_src <= cuif.LUI_src;
-	 idex.Ext_src <= cuif.Ext_src;
-	 idex.portb_src <= cuif.portb_src;
-	 idex.PC_src <= cuif.PC_src;
-	 idex.RegWEN <= (cuif.MemtoReg != 2'b01)? cuif.rw_flag : 1;  
-	 idex.RegDst <= cuif.RegDst;
-	 idex.ALU_op <= cuif.ALU_op;
-	 idex.MemWrite <= cuif.MemWrite;
-	 idex.MemRead <= cuif.MemRead;
-	 idex.MemtoReg <= cuif.MemtoReg;
-	 idex.check_over <= cuif.check_over;
-	 idex.mem_halt <= cuif.mem_halt;
-      end // if (idex_en)
+      end else if(idex_en) begin // if (!nRST)
+	 if (idex_flush) begin
+	    idex <= 0;
+	 end else begin
+	    idex.rdat_1 <= rfif.rdat1;
+	    idex.rdat_2 <= rfif.rdat2;
+	    idex.rt_hazard <= (cuif.RegDst != 2'b01)? r_inst.rt : 0;
+	    idex.rt <= r_inst.rt;
+	    idex.rd <= r_inst.rd;
+	    idex.rs <= r_inst.rs;
+	    idex.imm <= i_inst.imm;
+	    idex.shamt <= r_inst.shamt;
+	    idex.jaddr <= j_inst.addr;
+	    idex.pc_plus4 <= ifid.pc_plus4;
+	    idex.bra <= cuif.bra;
+	    idex.index_update <= bpif.index_O;
+	    idex.LUI_src <= cuif.LUI_src;
+	    idex.Ext_src <= cuif.Ext_src;
+	    idex.portb_src <= cuif.portb_src;
+	    idex.PC_src <= cuif.PC_src;
+	    idex.RegWEN <= (cuif.MemtoReg != 2'b01)? cuif.rw_flag : 1;  
+	    idex.RegDst <= cuif.RegDst;
+	    idex.ALU_op <= cuif.ALU_op;
+	    idex.MemWrite <= cuif.MemWrite;
+	    idex.MemRead <= cuif.MemRead;
+	    idex.MemtoReg <= cuif.MemtoReg;
+	    idex.check_over <= cuif.check_over;
+	    idex.mem_halt <= cuif.mem_halt;
+	 end
+      end else begin // else: !if(!nRST)
+	 idex <= idex;
+      end // else: !if(!nRST)
    end // always_ff @  
    
    //***********************************//
@@ -206,6 +211,7 @@ module datapath (
 	 exmem.zero <= 0;
 	 exmem.overflow <= 0;
 	 exmem.bra <= 0;
+	 exmem.index_update <= 0;
 	 exmem.MemtoReg <= 0;
 	 exmem.MemRead <= 0;
 	 exmem.MemWrite <= 0;
@@ -213,24 +219,40 @@ module datapath (
 	 exmem.RegDst_out <= 0;
 	 exmem.pc_plus4 <= 0;
 	 exmem.rdat_2 <= 0;
-	 exmem.LUI_src <= 0;
 	 exmem.halt <= 0;
-      end else if (exmem_en) begin
-	 exmem.imm <= idex.imm;
-	 exmem.RegWEN <= idex.RegWEN;
-	 exmem.zero <= zero;
-	 exmem.overflow <= overflow;
-	 exmem.bra <= idex.bra;
-	 exmem.MemtoReg <= idex.MemtoReg;
-	 exmem.MemRead <= idex.MemRead;
-	 exmem.MemWrite <= idex.MemWrite;
-	 exmem.alu_out <= out;
-	 exmem.RegDst_out <= RWD_out;
-	 exmem.pc_plus4 <= idex.pc_plus4;
-	 exmem.rdat_2 <= idex.rdat_2;
-	 exmem.LUI_src <= idex.LUI_src;
-	 exmem.halt <= halt;
-      end // else: !if(!nRST)
+      end else if (exmem_en) begin // if (!nRST)
+	 if (exmem_flush) begin
+	    exmem.imm <= 0;
+	    exmem.RegWEN <= 0;
+	    exmem.zero <= 0;
+	    exmem.overflow <= 0;
+	    exmem.bra <= 0;
+	    exmem.index_update <= 0;
+	    exmem.MemtoReg <= 0;
+	    exmem.MemRead <= 0;
+	    exmem.MemWrite <= 0;
+	    exmem.alu_out <= 0;
+	    exmem.RegDst_out <= 0;
+	    exmem.pc_plus4 <= 0;
+	    exmem.rdat_2 <= 0;
+	    exmem.halt <= 0;
+	 end else begin 
+	    exmem.imm <= idex.imm;
+	    exmem.RegWEN <= idex.RegWEN;
+	    exmem.zero <= zero;
+	    exmem.overflow <= overflow;
+	    exmem.bra <= idex.bra;
+	    exmem.index_update <= idex.index_update;
+	    exmem.MemtoReg <= idex.MemtoReg;
+	    exmem.MemRead <= idex.MemRead;
+	    exmem.MemWrite <= idex.MemWrite;
+	    exmem.alu_out <= out;
+	    exmem.RegDst_out <= RWD_out;
+	    exmem.pc_plus4 <= idex.pc_plus4;
+	    exmem.rdat_2 <= memadd_forward;
+	    exmem.halt <= halt;
+	 end // else: !if(exmem_flush)
+      end // if (exmem_en)
    end // always_ff @ (posedge CLK, negedge n_RST)
    assign exmem.dload = dpif.dmemload;
 
@@ -249,13 +271,51 @@ module datapath (
 	 mem.RegDst_out <= exmem.RegDst_out;
 	 mem.pc_plus4 <= exmem.pc_plus4;
 	 mem.imm <= exmem.imm;
-	 mem.LUI_src <= exmem.LUI_src;
       end
    end // always_ff @ (posedge CLK, negedge nRST)
    
    
    //********************************ALU MUX SET*****************************************//
 
+   //************* Foward Mux*******************//
+   always_comb begin
+      memadd_forward = idex.rdat_2;
+      casez(huif.memadd_forward)
+	2'b01:begin
+	   memadd_forward = exmem.alu_out;
+	end
+	2'b10:begin
+	   memadd_forward = IntoMem;
+	end
+      endcase // casez (huif.memadd_forward)
+   end
+  
+   always_comb begin
+      forward_a = idex.rdat_1;
+      casez(huif.forwarda_src)
+	2'b01:begin
+	   forward_a = exmem.alu_out;
+	end
+	2'b10:begin
+	   forward_a = IntoMem;
+	end
+      endcase // casez (XXX)
+   end
+
+   always_comb begin
+      forward_b = portb_mux_out;
+      casez(huif.forwardb_src)
+	2'b01:begin
+	   forward_b = exmem.alu_out; 
+	end
+	2'b10:begin
+	   forward_b = IntoMem;
+	end
+      endcase // casez (XXX)
+   end // always_comb begin
+
+   //*******************************************//
+   
    //Reg Write Dst Mux
    always_comb begin
       RWD_out = idex.rd;
@@ -270,22 +330,21 @@ module datapath (
    end // always_comb
    
    //Reg Write Port Mux
-   word_t IntoLUI;
+ 
    always_comb begin
-      IntoLUI = mem.alu_out;
+      IntoMem = mem.alu_out;
       casez(mem.MemtoReg)
 	2'b01:begin
-	   IntoLUI = mem.dload;
+	   IntoMem = mem.dload;
 	end
 	2'b10:begin
-	   IntoLUI = mem.pc_plus4;
+	   IntoMem = mem.pc_plus4;
 	end
       endcase // casez (MemtoReg)
    end // always_comb
 
    //LUI Mux
-   word_t IntoMem;
-   assign IntoMem = mem.LUI_src? luiExt : IntoLUI; 
+   assign portb_mux_out = idex.LUI_src? luiExt : IntoLUI; 
    
    //Extender Mux
    word_t extended_imm;
@@ -293,13 +352,13 @@ module datapath (
 
    //ALU Port b select Mux
    always_comb begin
-      portb_mux_out = idex.rdat_2;
+      IntoLUI = idex.rdat_2;
       casez(idex.portb_src)
 	2'b01:begin
-	   portb_mux_out = extended_imm;
+	   IntoLUI = extended_imm;
 	end
 	2'b10:begin
-	   portb_mux_out = shamtExt;
+	   IntoLUI = shamtExt;
 	end
       endcase // casez (CU.portb_scr)
    end // always_comb
@@ -340,5 +399,11 @@ module datapath (
    assign dpif.dmemstore = exmem.rdat_2;
    assign dpif.dmemaddr = exmem.alu_out;
    //*****************************************************************************//
+   //*********************************BP block assignment********************************//
+
+
+   //************************************************************************************//
+
+   
 endmodule
 

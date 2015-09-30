@@ -127,6 +127,7 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.ALU_op = ALU_XOR;
 	end
 	LUI:begin
+	   cuif.ALU_op = ALU_OR;
 	   cuif.LUI_src = 1;
 	end
 	LW:begin

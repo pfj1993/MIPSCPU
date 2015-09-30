@@ -20,14 +20,15 @@ package pipeline_reg_pkg;
    
    typedef struct packed{
       regbits_t	  rt;
+      regbits_t   rt_hazard;
       regbits_t	  rd;
+      regbits_t   rs;
       logic [15:0] imm;
       logic [25:0] jaddr;
       logic [4:0] shamt;
       word_t rdat_1;
       word_t rdat_2;
       word_t pc_plus4;
-      logic	  bra;// 1 for BNE, 0 for BEQ 	  
       logic 	  LUI_src;
       logic 	  Ext_src;
       logic [2:0] portb_src;
@@ -39,7 +40,9 @@ package pipeline_reg_pkg;
       logic 	  MemRead;//   
       logic [1:0] MemtoReg;//2'b00 from alu, 2'b01 from memory, 2'b10 from pc + 4
       logic 	  check_over;//
-      logic 	  mem_halt;//  	     
+      logic 	  mem_halt;//
+      logic	 [1:0] bra;// 2'b00 for no branch, 2'b01 for BNE, 2'b10 for BEQ
+      logic      [3:0] index_update;   
    }idex_p;
    
    //************************************//
@@ -55,13 +58,13 @@ package pipeline_reg_pkg;
       logic 	  zero;
       logic 	  overflow;
       logic [1:0] bra;
+      logic      [3:0] index_update; 
       logic [1:0] MemtoReg;
       word_t	  alu_out;
       word_t 	  dload;
       regbits_t   RegDst_out;
       word_t	  pc_plus4;
       word_t	  rdat_2;
-      logic	  LUI_src; 
    }exmem_p;
 
    //************************************//
@@ -77,7 +80,6 @@ package pipeline_reg_pkg;
       logic 	  halt;
       word_t dload;
       word_t alu_out; 
-      logic LUI_src;
    }mem_p;
 endpackage   
 `endif   

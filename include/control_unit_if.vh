@@ -20,7 +20,7 @@ interface control_unit_if;
    logic 	     check_over;
    logic 	     mem_halt;
    logic 	     PC_EN;
-   logic	     bra;
+   logic[1:0]	     bra;
    logic 	     rw_flag;
 modport cu (
 	    input  opcode, funct,
