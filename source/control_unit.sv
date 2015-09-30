@@ -141,6 +141,7 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.Ext_src = 1;
 	   cuif.rw_flag = 0;
 	   cuif.MemWrite = 1;
+	   cuif.RegDst = 2'b00;
 	end
 	LL:begin
 	   cuif.rw_flag = 0;

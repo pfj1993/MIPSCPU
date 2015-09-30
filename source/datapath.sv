@@ -48,7 +48,7 @@ module datapath (
    alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
    request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
-   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, huif);
+   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
    br_prediction BP(CLK, nRST, bpif);
 
    
@@ -64,7 +64,7 @@ module datapath (
    logic 		     oneState_flush, threeStates_flush;
 
    assign ifid_en = ~halt_reg;
-   assign ifid_flush = ~PC_en | oneState_flush | threeStates_flush ;
+   assign ifid_flush = ~PC_en | oneState_flush | threeStates_flush;
    assign idex_en = ~halt_reg;
    assign idex_flush = threeStates_flush;
    assign exmem_en = ~halt_reg;
@@ -442,7 +442,7 @@ module datapath (
    //************************************************************************************//
 
    //*******************************I/O assignment*****************************
-   assign dpif.halt = halt_reg;
+   assign dpif.halt = mem.halt;
    assign dpif.imemREN = imemREN;
    assign dpif.imemaddr = PC;
    assign dpif.dmemREN = exmem.MemRead;

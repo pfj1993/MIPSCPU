@@ -3,6 +3,8 @@ quietly virtual function -install /system_tb/DUT/CPU/DP/BP -env /system_tb/DUT/C
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /system_tb/CLK
 add wave -noupdate /system_tb/nRST
+add wave -noupdate /system_tb/DUT/CPU/DP/dpif/dhit
+add wave -noupdate /system_tb/DUT/CPU/DP/dpif/ihit
 add wave -noupdate /system_tb/DUT/CPU/DP/BP/bp
 add wave -noupdate /system_tb/DUT/CPU/DP/br
 add wave -noupdate /system_tb/DUT/CPU/DP/BP/bpif/index_O
@@ -24,8 +26,17 @@ add wave -noupdate /system_tb/DUT/CPU/DP/branchExt
 add wave -noupdate /system_tb/DUT/CPU/DP/PC_src
 add wave -noupdate /system_tb/DUT/CPU/DP/PC_next
 add wave -noupdate /system_tb/DUT/CPU/DP/predict_fail
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/forwarda_src
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/forwardb_src
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/stall
+add wave -noupdate /system_tb/DUT/CPU/DP/huif/memadd_forward
+add wave -noupdate /system_tb/DUT/CPU/DP/RF/register
+add wave -noupdate /system_tb/DUT/CPU/DP/ALU/a
+add wave -noupdate /system_tb/DUT/CPU/DP/ALU/b
+add wave -noupdate /system_tb/DUT/CPU/DP/ALU/aluop
+add wave -noupdate /system_tb/DUT/CPU/DP/ALU/out
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {174472 ps} 0}
+WaveRestoreCursors {{Cursor 1} {890734 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 162
@@ -41,4 +52,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {150626 ps} {294089 ps}
+WaveRestoreZoom {850140 ps} {950164 ps}

@@ -12,6 +12,7 @@ module hazard_unit(
 		   input logic mem_RegWEN,
 		   input regbits_t mem_RegDst,
 		   input logic idex_MemWrite,
+		   input regbits_t stall_rt,
 		   hazard_unit_if.hu huif
 		   );
    always_comb begin
@@ -20,13 +21,13 @@ module hazard_unit(
       huif.stall = 0;
       huif.memadd_forward = 0;
 
-      if (MemRead & ((idex_rt == ifid_rs) | (idex_rt == ifid_rt))) begin
+      if (MemRead & ((stall_rt == ifid_rs) | (stall_rt == ifid_rt)) & (stall_rt != 0)) begin
 	 huif.stall = 1;
       end
 
       if (mem_RegWEN & (mem_RegDst != 0) & 
 	  !(exmem_RegWEN & (exmem_RegDst != 0) & 
-	    (exmem_RegDst != idex_rs)) & (mem_RegDst == idex_rs)) begin
+	    (exmem_RegDst == idex_rs)) & (mem_RegDst == idex_rs)) begin
 	 huif.forwarda_src = 2'b10;
       end else if (exmem_RegWEN & (exmem_RegDst != 0) & (exmem_RegDst == idex_rs))begin
 	 huif.forwarda_src = 2'b01;
@@ -34,7 +35,7 @@ module hazard_unit(
 
       if (mem_RegWEN & (mem_RegDst != 0) & 
 	  !(exmem_RegWEN & (exmem_RegDst != 0) & 
-	    (exmem_RegDst != idex_rt)) & (mem_RegDst == idex_rt)) begin
+	    (exmem_RegDst == idex_rt)) & (mem_RegDst == idex_rt)) begin
 	 if(!idex_MemWrite) begin
 	    huif.forwardb_src = 2'b10;
 	 end else begin
