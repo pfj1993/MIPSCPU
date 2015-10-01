@@ -103,6 +103,7 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.bra = 2'b01;
 	   cuif.portb_src = 2'b00;
 	   cuif.rw_flag = 0;
+	   cuif.RegDst = 2'b00;
 	end
 	BNE:begin
 	   cuif.ALU_op = ALU_SUB;
@@ -110,6 +111,7 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.bra = 2'b10;
 	   cuif.portb_src = 2'b00;
 	   cuif.rw_flag = 0;
+	   cuif.RegDst = 2'b00;
 	end
 	SLTI:begin
 	   cuif.ALU_op = ALU_SLT;

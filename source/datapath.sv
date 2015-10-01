@@ -63,10 +63,10 @@ module datapath (
    logic 		     ifid_flush, idex_flush, exmem_flush;
    logic 		     oneState_flush, threeStates_flush;
 
-   assign ifid_en = ~halt_reg;
-   assign ifid_flush = ~PC_en | oneState_flush | threeStates_flush;
+   assign ifid_en = ~halt_reg & ~huif.stall;
+   assign ifid_flush = (~PC_en | oneState_flush | threeStates_flush);
    assign idex_en = ~halt_reg;
-   assign idex_flush = threeStates_flush;
+   assign idex_flush = threeStates_flush | huif.stall;
    assign exmem_en = ~halt_reg;
    assign exmem_flush = threeStates_flush;
    assign mem_en = ~halt_reg;
@@ -88,17 +88,17 @@ module datapath (
       end else if(cuif.PC_src == 2'b11 | cuif.PC_src == 2'b10) begin
 	 oneState_flush = 1;
 	 PC_src = (cuif.PC_src  == 2'b11)? 3'b011 : 3'b010;
-      end else if(cuif.bra & bpif.predict) begin //prediction
+      end else if((cuif.bra != 0) & bpif.predict) begin //prediction
 	 oneState_flush = 1;
 	 PC_src = 3'b100;
-      end	
+      end
    end
 
    //**********************************************************************************//
    //*********************************Branch Predict Block*******************************//
    logic taken;
    assign bpif.br = (exmem.bra != 0);
-   assign bpif.index_I = i_inst.imm[5:2];
+   assign bpif.index_I = i_inst.imm[3:0];
    assign bpif.index_update = exmem.index;
    assign bpif.br_taken = br;
    assign bpif.br_target_I = PC_branch;
