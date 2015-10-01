@@ -37,7 +37,7 @@ module datapath (
    branch_prediction_if bpif();
 
    //port init
-   logic 		     PC_en, negative, overflow, zero, dmemREN, dmemWEN, imemREN, halt, halt_reg;
+   logic 		     PC_en, negative, overflow, zero, halt, halt_reg;
    word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
    logic [2:0] 		     PC_src;
    word_t PC_plus4, PC_branch, PC_reg, PC_jump;
@@ -47,7 +47,6 @@ module datapath (
    register_file RF(CLK, nRST, rfif);
    alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
-   request_unit RU(CLK, nRST, dpif.ihit, dpif.dhit, idex.MemtoReg, idex.MemWrite, dmemREN, dmemWEN, imemREN);
    hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
    br_prediction BP(CLK, nRST, bpif);
 
@@ -461,7 +460,7 @@ module datapath (
 
    //*******************************I/O assignment*****************************
    assign dpif.halt = mem.halt;
-   assign dpif.imemREN = imemREN;
+   assign dpif.imemREN = 1;
    assign dpif.imemaddr = PC;
    assign dpif.dmemREN = exmem.MemRead;
    assign dpif.dmemWEN = exmem.MemWrite;
