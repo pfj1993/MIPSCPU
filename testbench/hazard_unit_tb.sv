@@ -17,7 +17,7 @@ module hazard_unit_tb;
    logic idex_MemWrite;
    regbits_t stall_rt;
    
-   hazard_unit_if hzif ();
+   hazard_unit_if huif ();
    hazard_unit HU (.idex_rs(idex_rs),
 		   .idex_rt(idex_rt),
 		   .MemRead(MemRead),
@@ -36,18 +36,33 @@ module hazard_unit_tb;
    // clock
    always #(PERIOD/2) CLK++;   
    initial begin
-      idex_rs;
-      idex_rt;   
-      MemRead;   
-      ifid_rs;   
-      ifid_rt;
-      exmem_RegWEN;   
-      exmem_RegDst;   
-      mem_RegWEN;   
-      mem_RegDst;
-      idex_MemWrite;
-      stall_rt;
-      #(PERIOD)	      
+      idex_rs = 0;
+      idex_rt = 0;   
+      MemRead = 0;   
+      ifid_rs = 0;   
+      ifid_rt = 0;
+      exmem_RegWEN = 0;   
+      exmem_RegDst = 0;   
+      mem_RegWEN = 0;   
+      mem_RegDst = 0;
+      idex_MemWrite = 0;
+      stall_rt = 0;
+      #(PERIOD)
+      mem_RegWEN = 1;
+      mem_RegDst = 1;
+      idex_rs = 1;
+      idex_rt = 1;
+      #(PERIOD)
+      exmem_RegWEN = 1;
+      exmem_RegDst = 1;
+      #(PERIOD)
+      idex_MemWrite = 1;
+      #(PERIOD)
+      MemRead = 1;
+      stall_rt = 1;
+      ifid_rs = 1;
+      #(PERIOD * 10)
+      $finish;
    end
 endmodule
->>>>>>> a601dbc4bfedc912199af3faad4603b651648db4
+
