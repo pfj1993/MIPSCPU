@@ -62,12 +62,13 @@ module datapath (
    logic 		     ifid_en, idex_en, exmem_en, mem_en;
    logic 		     ifid_flush, idex_flush, exmem_flush;
    logic 		     oneState_flush, threeStates_flush;
+   logic 		     predict_fail;
 
-   assign ifid_en = ~halt_reg & ~huif.stall;
+   assign ifid_en = ~halt_reg & ~(huif.stall & ~predict_fail) & ~((PC_src == 3'b010 | PC_src == 3'b011) & dpif.dhit);
    assign ifid_flush = (~PC_en | oneState_flush | threeStates_flush);
    assign idex_en = ~halt_reg;
-   assign idex_flush = threeStates_flush | huif.stall;
-   assign exmem_en = ~halt_reg;
+   assign idex_flush = threeStates_flush | (huif.stall & ~predict_fail);
+   assign exmem_en = ~halt_reg & ~((PC_src == 3'b101 | PC_src == 3'b001) & dpif.dhit);
    assign exmem_flush = threeStates_flush;
    assign mem_en = ~halt_reg;
 		    
@@ -76,7 +77,7 @@ module datapath (
    word_t IntoMem, IntoLUI;;
 
    //*********************************PC Select Logic*******************************//
-   logic 		     predict_fail, br;
+   logic 		     br;
    always_comb begin
       PC_src = 3'b000;
       threeStates_flush = 0;
@@ -125,7 +126,7 @@ module datapath (
    assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
    //***********************************PC Block*************************************//
-   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg & ~huif.stall;
+   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg & ~(huif.stall & ~predict_fail);
 
    word_t 		     pc_temp;
    assign pc_temp = ifid.pc_plus4 - 4;
@@ -299,7 +300,24 @@ module datapath (
 	    exmem.rdat_2 <= memadd_forward;
 	    exmem.halt <= halt;
 	 end // else: !if(exmem_flush)
-      end // if (exmem_en)
+      end else begin
+	 exmem.imm <= exmem.imm;
+	 exmem.RegWEN <= exmem.RegWEN;
+	 exmem.zero <= exmem.zero;
+	 exmem.overflow <= exmem.overflow;
+	 exmem.bra <= exmem.bra;
+	 exmem.predict <= exmem.predict;
+	 exmem.index <= exmem.index;
+	 exmem.br_target <= exmem.br_target;
+	 exmem.MemtoReg <= exmem.MemtoReg;
+	 exmem.MemRead <= exmem.MemRead;
+	 exmem.MemWrite <= exmem.MemWrite;
+	 exmem.alu_out <= exmem.alu_out;
+	 exmem.RegDst_out <= exmem.RegDst_out;
+	 exmem.pc_plus4 <= exmem.pc_plus4;
+	 exmem.rdat_2 <= exmem.rdat_2;
+	 exmem.halt <= exmem.halt;
+      end
    end // always_ff @ (posedge CLK, negedge n_RST)
    assign exmem.dload = dpif.dmemload;
 
