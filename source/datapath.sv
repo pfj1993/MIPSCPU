@@ -37,18 +37,22 @@ module datapath (
    branch_prediction_if bpif();
 
    //port init
-   logic 		     PC_en, negative, overflow, zero, halt, halt_reg;
+   logic 		     PC_en, negative, overflow, zero, halt;
    word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
    logic [2:0] 		     PC_src;
    word_t PC_plus4, PC_branch, PC_reg, PC_jump;
    //units map
-
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
+   
    register_file RF(CLK, nRST, rfif);
+   
    alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
+   
    control_unit CU(cuif);
+   
    hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, 
 		  exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
+   
    br_prediction BP(CLK, nRST, bpif);
 
    
@@ -59,67 +63,64 @@ module datapath (
    mem_p mem;
 
    //flush signal
-   logic 		     ifid_en, idex_en, exmem_en, mem_en;
-   logic 		     ifid_flush, idex_flush, exmem_flush;
-   logic 		     oneState_flush, threeStates_flush;
-   logic 		     predict_fail;
+   logic 		     ifid_en, idex_en, exmem_en, mem_en;//pipeline regs enbale signals
+   logic 		     ifid_flush, idex_flush, exmem_flush;// pipeline regs flush signals
+   logic 		     oneState_flush, threeStates_flush;//oneState flush idex, Threestates flush ifid, idex, exmem
+   logic 		     predict_fail; //branch perdict related signal
 
-   assign ifid_en = ~halt_reg & 
+   /*************************************
+    Pipeline Regs Enable logic (related to ram lantency)
+   ***************************************/
+   assign ifid_en = ~mem.halt & 
 		    (~(huif.stall & ~predict_fail) & 
 		     ~((PC_src == 3'b010 | PC_src == 3'b011 | PC_src == 3'b100) & ~PC_en)) & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
    assign ifid_flush = (~PC_en | oneState_flush | threeStates_flush);
-   assign idex_en = ~halt_reg & 
+   assign idex_en = ~mem.halt & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
    assign idex_flush = threeStates_flush | (huif.stall & ~predict_fail) & PC_en;
-   assign exmem_en = ~halt_reg & ~((PC_src == 3'b101 | PC_src == 3'b001) & ~PC_en) & 
+   assign exmem_en = ~mem.halt & ~((PC_src == 3'b101 | PC_src == 3'b001) & ~PC_en) & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
    assign exmem_flush = threeStates_flush & PC_en;
-   assign mem_en = ~halt_reg & 
+   assign mem_en = ~mem.halt & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
-		    
+	
+	    
    //reg out portal
    regbits_t RWD_out;
-   word_t IntoMem, IntoLUI;;
+   word_t IntoMem, IntoLUI;
 
    //*********************************PC Select Logic*******************************//
    logic 		     br;
    always_comb begin
-      PC_src = 3'b000;
+      PC_src = 3'b000;//default state, nextPC = PC_plus4
       threeStates_flush = 0;
       oneState_flush = 0;
-      
+
+      //Priority: perdict_fail > jump > branch prediction > default
       if(predict_fail) begin
 	 threeStates_flush = 1;
-	 PC_src = br? 3'b001 : 3'b101;	 
+	 PC_src = br? 3'b001 : 3'b101; //if prediction fail goes back to correct PC and do three states flush
       end else if(cuif.PC_src == 2'b11 | cuif.PC_src == 2'b10) begin
 	 oneState_flush = 1;
-	 PC_src = (cuif.PC_src  == 2'b11)? 3'b011 : 3'b010;
+	 PC_src = (cuif.PC_src  == 2'b11)? 3'b011 : 3'b010;//Jump selection
       end else if((cuif.bra != 0) & bpif.predict) begin //prediction
 	 oneState_flush = 1;
-	 PC_src = 3'b100;
+	 PC_src = 3'b100;//select from prediction
       end
    end
 
    //**********************************************************************************//
-   //*********************************Branch Predict Block*******************************//
-   logic taken;
-   assign bpif.br = (exmem.bra != 0);
-   assign bpif.index_I = i_inst.imm[2:0];
-   assign bpif.index_update = exmem.index;
-   assign bpif.br_taken = br;
-   assign bpif.br_target_I = PC_branch;
-   assign bpif.PC_en = PC_en;
 
-   //**********************************************************************************//
-   
-   //Decode Instrction
+   /**************************************************
+                 Instrction Decoding
+    **************************************************/
    j_t j_inst;
    i_t i_inst;
    r_t r_inst;
-   assign j_inst = j_t'(ifid.instr);
-   assign i_inst = i_t'(ifid.instr);
-   assign r_inst = r_t'(ifid.instr);
+   assign j_inst = j_t'(ifid.instr);//decode the inst(instrustion) in j-type style
+   assign i_inst = i_t'(ifid.instr);//decode the inst in i-type style
+   assign r_inst = r_t'(ifid.instr);//decode the inst in r-type style
      
    //***********************************Extender*********************************
    word_t signedExt, zeroExt, shamtExt, luiExt, branchExt;
@@ -133,9 +134,8 @@ module datapath (
    assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
    //***********************************PC Block*************************************//
-   assign PC_en = dpif.ihit & 
-		    ~(dpif.dhit) & ~halt_reg & ~(huif.stall & ~predict_fail);
-
+   assign PC_en = dpif.ihit & ~(dpif.dhit) & ~mem.halt & 
+		  ~(huif.stall & ~predict_fail); // PC enable logic, most related to ram latency
    word_t 		     pc_temp;
    assign pc_temp = ifid.pc_plus4 - 4;
    //PC caculation
@@ -239,15 +239,9 @@ module datapath (
    end // always_ff @  
    
    //***********************************//
-   //        HALT Reg and logic
+   //           HALT  logic            //
    //**********************************//
-   always_ff @(posedge CLK, negedge nRST) begin
-      if (!nRST) begin
-	 halt_reg <= 0;
-      end else begin
-	 halt_reg <= mem.halt;
-      end
-   end
+
    assign halt = (idex.check_over & overflow) | idex.mem_halt;
 
    //***********************************//
@@ -330,7 +324,7 @@ module datapath (
    assign exmem.dload = dpif.dmemload;
 
 
-  //***********************************Branch Caculation************************************//
+  //*******************************Branch Prediction Check*******************************//
    always_comb begin
       br = 0;
       predict_fail = 0;
@@ -348,8 +342,7 @@ module datapath (
       end else begin
 	 predict_fail = 1;
       end
-   end // always_comb begin
-      
+   end // always_comb begin   
    //***********************************************************************************//
    
    //***********************************//
@@ -384,8 +377,8 @@ module datapath (
 	   memadd_forward = IntoMem;
 	end
       endcase // casez (huif.memadd_forward)
-   end
-  
+   end // always_comb begin
+   
    always_comb begin
       forward_a = idex.rdat_1;
       casez(huif.forwarda_src)
@@ -442,7 +435,7 @@ module datapath (
    //LUI Mux
    assign portb_mux_out = idex.LUI_src? luiExt : IntoLUI; 
    
-   //Extender Mux
+   //signed/zero Extender select Mux
    word_t extended_imm;
    assign extended_imm = idex.Ext_src? signedExt : zeroExt;
 
@@ -459,16 +452,15 @@ module datapath (
       endcase // casez (CU.portb_scr)
    end // always_comb
 
-   //************************************Register File***********************************//
+   //*****************************Register File I/O Assignment***************************//
    assign rfif.WEN = mem.RegWEN;
    assign rfif.wsel = mem.RegDst_out;
    assign rfif.rsel1 = r_inst.rs;
    assign rfif.rsel2 = r_inst.rt;
    assign rfif.wdat = IntoMem;
-   
    //************************************************************************************//
 
-   //*******************************I/O assignment*****************************
+   //*******************************Datapath I/O Assignment*****************************//
    assign dpif.halt = mem.halt;
    assign dpif.imemREN = 1;
    assign dpif.imemaddr = PC;
@@ -476,12 +468,16 @@ module datapath (
    assign dpif.dmemWEN = exmem.MemWrite;
    assign dpif.dmemstore = exmem.rdat_2;
    assign dpif.dmemaddr = exmem.alu_out;
-   //*****************************************************************************//
-   //*********************************BP block assignment********************************//
-
-
-   //************************************************************************************//
-
+   //***********************************************************************************//
    
+   //************************Branch Predict Block I/O Assignment************************//
+   assign bpif.br = (exmem.bra != 0);
+   assign bpif.index_I = i_inst.imm[2:0];
+   assign bpif.index_update = exmem.index;
+   assign bpif.br_taken = br;
+   assign bpif.br_target_I = PC_branch;
+   assign bpif.PC_en = PC_en;
+   //**********************************************************************************//
+    
 endmodule
 
