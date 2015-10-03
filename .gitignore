@@ -1,3 +1,6 @@
+*
+!*.*
+!/**/
 work
 mapped
 fpga
@@ -15,3 +18,5 @@ README
 *.autosave
 *#*
 *~
+*.diff
+*.orig
