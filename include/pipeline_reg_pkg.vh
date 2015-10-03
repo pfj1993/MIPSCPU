@@ -42,7 +42,7 @@ package pipeline_reg_pkg;
       logic 	  check_over;//
       logic 	  mem_halt;//
       logic	 [1:0] bra;// 2'b00 for no branch, 2'b01 for BNE, 2'b10 for BEQ
-      logic      [3:0] index;
+      logic      [2:0] index;
       word_t     br_target;
       logic      predict;   
    }idex_p;
@@ -60,7 +60,7 @@ package pipeline_reg_pkg;
       logic 	  zero;
       logic 	  overflow;
       logic [1:0] bra;
-      logic      [3:0] index;
+      logic      [2:0] index;
       logic      predict;
       word_t     br_target;  
       logic [1:0] MemtoReg;

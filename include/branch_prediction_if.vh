@@ -6,16 +6,17 @@
 
 interface branch_prediction_if;
   logic br;
-  logic [3:0] index_O;
-  logic [3:0] index_I;
-  logic [3:0] index_update;
+  logic [2:0] index_O;
+  logic [2:0] index_I;
+  logic [2:0] index_update;
   logic br_taken;
   word_t  br_target_O;
   word_t  br_target_I;
   logic predict;
+  logic PC_en;
 
   modport bp(
-    input br, index_I, index_update, br_taken, br_target_I, 
+    input br, index_I, index_update, br_taken, br_target_I, PC_en,
     output index_O, br_target_O, predict
   );
 

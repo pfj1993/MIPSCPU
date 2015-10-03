@@ -1,5 +1,6 @@
 #! /bin/bash
+make clean
 asm $1
-sim -t $1 > /dev/null
+sim -t > /dev/null
 make system.wav
 exit 0

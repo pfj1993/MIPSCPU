@@ -47,7 +47,8 @@ module datapath (
    register_file RF(CLK, nRST, rfif);
    alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
    control_unit CU(cuif);
-   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
+   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, 
+		  exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
    br_prediction BP(CLK, nRST, bpif);
 
    
@@ -63,13 +64,19 @@ module datapath (
    logic 		     oneState_flush, threeStates_flush;
    logic 		     predict_fail;
 
-   assign ifid_en = ~halt_reg & ~(huif.stall & ~predict_fail) & ~((PC_src == 3'b010 | PC_src == 3'b011) & dpif.dhit);
+   assign ifid_en = ~halt_reg & 
+		    (~(huif.stall & ~predict_fail) & 
+		     ~((PC_src == 3'b010 | PC_src == 3'b011 | PC_src == 3'b100) & ~PC_en)) & 
+		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
    assign ifid_flush = (~PC_en | oneState_flush | threeStates_flush);
-   assign idex_en = ~halt_reg;
-   assign idex_flush = threeStates_flush | (huif.stall & ~predict_fail);
-   assign exmem_en = ~halt_reg & ~((PC_src == 3'b101 | PC_src == 3'b001) & dpif.dhit);
-   assign exmem_flush = threeStates_flush;
-   assign mem_en = ~halt_reg;
+   assign idex_en = ~halt_reg & 
+		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
+   assign idex_flush = threeStates_flush | (huif.stall & ~predict_fail) & PC_en;
+   assign exmem_en = ~halt_reg & ~((PC_src == 3'b101 | PC_src == 3'b001) & ~PC_en) & 
+		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
+   assign exmem_flush = threeStates_flush & PC_en;
+   assign mem_en = ~halt_reg & 
+		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
 		    
    //reg out portal
    regbits_t RWD_out;
@@ -98,10 +105,11 @@ module datapath (
    //*********************************Branch Predict Block*******************************//
    logic taken;
    assign bpif.br = (exmem.bra != 0);
-   assign bpif.index_I = i_inst.imm[3:0];
+   assign bpif.index_I = i_inst.imm[2:0];
    assign bpif.index_update = exmem.index;
    assign bpif.br_taken = br;
    assign bpif.br_target_I = PC_branch;
+   assign bpif.PC_en = PC_en;
 
    //**********************************************************************************//
    
@@ -125,7 +133,8 @@ module datapath (
    assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
    //***********************************PC Block*************************************//
-   assign PC_en = dpif.ihit & !dpif.dhit & ~halt_reg & ~(huif.stall & ~predict_fail);
+   assign PC_en = dpif.ihit & 
+		    ~(dpif.dhit) & ~halt_reg & ~(huif.stall & ~predict_fail);
 
    word_t 		     pc_temp;
    assign pc_temp = ifid.pc_plus4 - 4;
@@ -324,6 +333,7 @@ module datapath (
   //***********************************Branch Caculation************************************//
    always_comb begin
       br = 0;
+      predict_fail = 0;
       casez(exmem.bra)
 	2'b01:begin
 	   br = exmem.zero? 1 : 0;
@@ -333,7 +343,7 @@ module datapath (
 	end //
       endcase // casez (exme.bra)
       if ((((br == exmem.predict) & (br == 1)) & (PC_branch == exmem.br_target)) 
-	  | ((br == exmem.predict) & (br == 0))) begin
+	  | ((br == exmem.predict) & (br == 0)) | (exmem.bra == 0)) begin
 	 predict_fail = 0;
       end else begin
 	 predict_fail = 1;
