@@ -1,11 +1,12 @@
 `include "branch_prediction_if.vh"
+`include "cpu_types_pkg.vh"
 
 module br_prediction(
 		     input logic CLK,
 		     input logic nRST,
 		     branch_prediction_if.bp bpif
 		     );
-   
+   import cpu_types_pkg::*;
    typedef enum 		 logic [1:0] {
 					    TAKE,
 					    TAKE_LESS,

@@ -16,8 +16,6 @@
 `include "register_file_if.vh"
 `include "pipeline_reg_pkg.vh"
 `include "control_unit_if.vh"
-`include "hazard_unit_if.vh"
-`include "branch_prediction_if.vh"
 
 module datapath (
 		 input logic CLK, nRST,
@@ -41,6 +39,17 @@ module datapath (
    word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
    logic [2:0] 		     PC_src;
    word_t PC_plus4, PC_branch, PC_reg, PC_jump;
+
+   //pipeline reg
+   ifid_p ifid;
+   idex_p idex;
+   exmem_p exmem;
+   mem_p mem;
+   //inst decode
+   j_t j_inst;
+   i_t i_inst;
+   r_t r_inst;
+
    //units map
    pc PC1(PC_en, PC_next, CLK, nRST, PC);
    
@@ -54,13 +63,6 @@ module datapath (
 		  exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
    
    br_prediction BP(CLK, nRST, bpif);
-
-   
-   //pipeline reg
-   ifid_p ifid;
-   idex_p idex;
-   exmem_p exmem;
-   mem_p mem;
 
    //flush signal
    logic 		     ifid_en, idex_en, exmem_en, mem_en;//pipeline regs enbale signals
@@ -115,9 +117,6 @@ module datapath (
    /**************************************************
                  Instrction Decoding
     **************************************************/
-   j_t j_inst;
-   i_t i_inst;
-   r_t r_inst;
    assign j_inst = j_t'(ifid.instr);//decode the inst(instrustion) in j-type style
    assign i_inst = i_t'(ifid.instr);//decode the inst in i-type style
    assign r_inst = r_t'(ifid.instr);//decode the inst in r-type style

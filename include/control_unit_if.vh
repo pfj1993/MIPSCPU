@@ -26,7 +26,6 @@ modport cu (
 	    input  opcode, funct,
 	    output PC_src, Ext_src, LUI_src, portb_src, RegDst, ALU_op, MemWrite, MemRead, MemtoReg, PC_EN, check_over, mem_halt, bra, rw_flag
 	    );
- 	     
-    
+ 	   
 endinterface
 `endif
