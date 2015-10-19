@@ -21,30 +21,31 @@ module memory_control (
    
   // number of cpus for cc
   parameter CPUS = 2;
+   parameter CPUID = 0;
 
-   assign ccif.dload[0] = ccif.ramload;
-   assign ccif.iload[0] = ccif.ramload;
+   assign ccif.dload[CPUID] = ccif.ramload;
+   assign ccif.iload[CPUID] = ccif.ramload;
    assign ccif.ramstore = ccif.dstore;
-   assign ccif.ramaddr =  (ccif.dWEN[0] | ccif.dREN[0])? ccif.daddr : ccif.iREN? ccif.iaddr : 'z;
-   assign ccif.ramREN = ((ccif.dREN[0] | ccif.iREN[0]) & !ccif.dWEN[0])? 1'b1 : 1'b0;
-   assign ccif.ramWEN = ccif.dWEN[0]? 1'b1 : 1'b0;
+   assign ccif.ramaddr =  (ccif.dWEN[CPUID] | ccif.dREN[CPUID])? ccif.daddr : ccif.iREN? ccif.iaddr : 'z;
+   assign ccif.ramREN = ((ccif.dREN[CPUID] | ccif.iREN[CPUID]) & !ccif.dWEN[CPUID])? 1'b1 : 1'b0;
+   assign ccif.ramWEN = ccif.dWEN[CPUID]? 1'b1 : 1'b0;
    
 
    always_comb begin
-      ccif.dwait[0] = 1'b1;
-      ccif.iwait[0] = 1'b1;
+      ccif.dwait[CPUID] = 1'b1;
+      ccif.iwait[CPUID] = 1'b1;
       casez(ccif.ramstate)
 	ACCESS: begin
-	   ccif.dwait[0] = !(ccif.dREN[0] | ccif.dWEN[0] | !ccif.iREN[0]);
-	   ccif.iwait[0] = ccif.dREN[0] | ccif.dWEN[0];
+	   ccif.dwait[CPUID] = !(ccif.dREN[CPUID] | ccif.dWEN[CPUID]);
+	   ccif.iwait[CPUID] = ccif.dREN[CPUID] | ccif.dWEN[CPUID];
 	end
 	BUSY: begin
-	   ccif.dwait[0] = (ccif.dREN[0] | ccif.dWEN[0]);
-	   ccif.iwait[0] = ccif.iREN[0];
+	   ccif.dwait[CPUID] = (ccif.dREN[CPUID] | ccif.dWEN[CPUID]);
+	   ccif.iwait[CPUID] = 1;
 	end
 	FREE: begin
-	   ccif.dwait[0] = 1'b0;
-	   ccif.iwait[0] = 1'b0;
+	   ccif.dwait[CPUID] = 1'b0;
+	   ccif.iwait[CPUID] = 1'b0;
 	end
 	ERROR: begin
 	end
