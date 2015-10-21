@@ -8,15 +8,15 @@
 
 module caches (
   input logic CLK, nRST,
-  datapath_cache_if.cache dcif,
-  cache_control_if.caches ccif
+  datapath_cache_if dcif,
+  cache_control_if ccif
 );
   parameter CPUID = 0;
 
   // icache
-  icache  ICACHE(CLK, nRST, dcif, ccif);
+  icache  ICACHE(CLK, nRST, dcif.icache, ccif.icache);
   // dcache
-  dcache  DCACHE(CLK, nRST, dcif, ccif);
+  dcache  DCACHE(CLK, nRST, dcif.dcache, ccif.dcache);
 
   // dcache invalidate before halt handled by dcache when exists
   //assign dcif.flushed = dcif.halt; // 

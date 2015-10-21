@@ -63,7 +63,7 @@ module br_prediction(
    end // always_comb begin
    
    assign bpif.br_target_O = target_add[bpif.index_I];
-   assign bpif.predict = (BTB[bpif.index_I] == TAKE | BTB[bpif.index_I] == TAKE_LESS)? 1 : 0;
+   assign bpif.predict = ((BTB[bpif.index_I] == TAKE) | (BTB[bpif.index_I] == TAKE_LESS))? 1 : 0;
    assign bpif.index_O = bpif.index_I;
    
 endmodule

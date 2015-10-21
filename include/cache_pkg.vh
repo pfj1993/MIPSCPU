@@ -1,5 +1,5 @@
-`ifndef PIPELINE_REG_PKG_VH
-`define PIPELINE_REG_PKG_VH
+`ifndef CACHE_PKG_VH
+`define CACHE_PKG_VH
 
 `include "cpu_types_pkg.vh"
 
