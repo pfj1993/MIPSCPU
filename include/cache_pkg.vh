@@ -43,7 +43,8 @@ package cache_pkg;
 			  LOAD1,
 			  LOAD2,
 			  FLUSH,
-			  FLUSH_NEXT
+			  FLUSH_NEXT,
+			  CACHE_HALT
 			  } dstate_t;
    
 endpackage

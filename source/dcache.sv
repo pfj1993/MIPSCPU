@@ -21,21 +21,20 @@ module dcache(input logic CLK,
    logic 		  counter_EN;
    
    flush_cnt_t flush_cnt;
-   logic 		  flush_cnt_en, flush_skip;
+   logic 		  flush_cnt_en;
    
    assign dmemaddr = dcachef_t'(dcif.dmemaddr);
    
    twoway_dcache_t [7:0]dcache;
    twoway_dcache_t [7:0]dcache_next; 
 
-   logic 		  hit0, hit1, valid0, valid1, replace_block;
-   logic [1:0] 		  dirty;
-   assign replace_block = ~valid0? 0 : ~valid1? 1: ~dcache[dmemaddr.idx].recent;
-   assign dirty = {dcache[dmemaddr.idx].block[0].dirty, dcache[dmemaddr.idx].block[1].dirty};
-   assign valid0 = dcache[dmemaddr.idx].block[0].valid;
-   assign valid1 = dcache[dmemaddr.idx].block[1].valid;
-   assign hit0 = (dcache[dmemaddr.idx].block[0].tag == dmemaddr.tag) & valid0;
-   assign hit1 = (dcache[dmemaddr.idx].block[1].tag == dmemaddr.tag) & valid1;
+   logic 		  hit0, hit1, replace_block;
+   logic [1:0] 		  dirty, valid;
+   assign replace_block = ~valid[0]? 0 : ~valid[1]? 1: ~dcache[dmemaddr.idx].recent;
+   assign dirty = {dcache[dmemaddr.idx].block[1].dirty, dcache[dmemaddr.idx].block[0].dirty};
+   assign valid = {dcache[dmemaddr.idx].block[1].valid, dcache[dmemaddr.idx].block[0].valid};
+   assign hit0 = (dcache[dmemaddr.idx].block[0].tag == dmemaddr.tag) & valid[0];
+   assign hit1 = (dcache[dmemaddr.idx].block[1].tag == dmemaddr.tag) & valid[1];
    
    always_ff @(posedge CLK, negedge nRST) begin // 32bits counter to counter cache hit
       if (!nRST) begin
@@ -52,8 +51,6 @@ module dcache(input logic CLK,
    	 flush_cnt <= 0;
       end else if (flush_cnt_en) begin
    	 flush_cnt <= flush_cnt + 1;
-      end else if (flush_skip) begin
-   	 flush_cnt <= flush_cnt + 2;
       end else begin
    	 flush_cnt <= flush_cnt;
       end
@@ -97,7 +94,6 @@ module dcache(input logic CLK,
       dcif.flushed = 0;
       counter_EN = 0;
       flush_cnt_en = 0;
-      flush_skip = 0;
       
       case(state)
 	IDLE1: begin
@@ -123,7 +119,7 @@ module dcache(input logic CLK,
 		    counter_EN = 1;
 		 end
 	      end else begin//Miss
-		 if (dirty[replace_block]) begin
+		 if (dirty[replace_block] & valid[replace_block]) begin
 		    //Find out if not LRU block is dirty
 		    nextstate = WRITE_BACK1;
 		 end else begin
@@ -152,7 +148,7 @@ module dcache(input logic CLK,
 	   ccif.dREN = 1;
 	end
 
-	WRITE_BACK1: begin
+	WRITE_BACK1: begin // Write lower word into memory
 	   if (!ccif.dwait) begin
 	      nextstate = WRITE_BACK2;
 	   end
@@ -162,7 +158,7 @@ module dcache(input logic CLK,
 	   ccif.dstore = dcache[dmemaddr.idx].block[replace_block].data[0];
 	end
 	
-	WRITE_BACK2: begin
+	WRITE_BACK2: begin // Write higher word into memory
 	   if (!ccif.dwait) begin
 	      nextstate = LOAD1;
 	      dcache_next[dmemaddr.idx].block[replace_block].dirty = 0;
@@ -173,7 +169,7 @@ module dcache(input logic CLK,
 			 1'b1, dmemaddr.bytoff};
 	end
 
-	FLUSH: begin
+	FLUSH: begin //Flush the cache back to memory
 	   if (dcache[flush_cnt.index].block[flush_cnt.set].valid & 
 	       dcache[flush_cnt.index].block[flush_cnt.set].dirty) begin
 	      if (!ccif.dwait) begin
@@ -194,13 +190,22 @@ module dcache(input logic CLK,
 	   end // else: !if(dcache[flush_cnt...
 	end 
 	
-	FLUSH_NEXT: begin
+	FLUSH_NEXT: begin // Increase flush counter
 	   if (~flush_cnt.finish) begin
 	      flush_cnt_en = 1;
 	      nextstate = FLUSH;
 	   end else begin
+	      nextstate = CACHE_HALT;
+	   end
+	end
+
+	CACHE_HALT: begin
+	   if (!ccif.dwait) begin
 	      dcif.flushed = 1;
 	   end
+	   ccif.dWEN = 1;
+	   ccif.dstore = counter;
+	   ccif.daddr = 32'h00003100;
 	end
       endcase // case (state)
    end // always_comb begin
