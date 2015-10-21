@@ -40,8 +40,6 @@ module memory_control (
 	   ccif.iwait[CPUID] = ccif.dREN[CPUID] | ccif.dWEN[CPUID];
 	end
 	BUSY: begin
-	   ccif.dwait[CPUID] = (ccif.dREN[CPUID] | ccif.dWEN[CPUID]);
-	   ccif.iwait[CPUID] = 1;
 	end
 	FREE: begin
 	   ccif.dwait[CPUID] = 1'b0;

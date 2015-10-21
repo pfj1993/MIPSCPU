@@ -4,8 +4,8 @@
 
 module icache(input logic CLK,
 	      input logic nRST,
-	      datapath_cache_if dcif,
-	      cache_control_if ccif
+	      datapath_cache_if.icache dcif,
+	      cache_control_if.icache ccif
 	      );
    
    import cache_pkg::*;
@@ -13,7 +13,7 @@ module icache(input logic CLK,
 
    parameter BAD = 32'hBAD1BAD1;
    
-   icache_block [15:0]icache;
+   icache_block_t [15:0]icache;
 
    istate_t state, nextstate;
    icachef_t imemaddr;

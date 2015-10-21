@@ -135,7 +135,7 @@ module datapath (
          
    //***********************************PC Block*************************************//
    assign PC_en = dpif.ihit & ~(dpif.dhit) & ~mem.halt & 
-		  ~(huif.stall & ~predict_fail); // PC enable logic, most related to ram latency
+		  ~(huif.stall & ~predict_fail) & (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit); // PC enable logic, most related to ram latency
    word_t 		     pc_temp;
    assign pc_temp = ifid.pc_plus4 - 4;
    //PC caculation
