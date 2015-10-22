@@ -131,7 +131,7 @@ module datapath (
    assign branchExt = !exmem.imm[15] ? {16'h0000, exmem.imm} : {16'hFFFF, exmem.imm};
          
    //***********************************PC Block*************************************//
-   assign PC_en = dpif.ihit & ~(dpif.dhit) & ~mem.halt & 
+   assign PC_en = dpif.ihit & ~mem.halt & 
 		  ~(huif.stall & ~predict_fail) & (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit); // PC enable logic, most related to ram latency
    word_t 		     pc_temp;
    assign pc_temp = ifid.pc_plus4 - 4;

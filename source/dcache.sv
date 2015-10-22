@@ -15,19 +15,26 @@ module dcache(input logic CLK,
    parameter BAD = 32'hBAD1BAD1;
 
    dstate_t laststate, state, nextstate;
-   dcachef_t dmemaddr;
+   dcachef_t dmemaddr, last_dmemaddr;
 
+   logic 		  address_lock;
+   
    word_t counter;
    logic 		  counter_EN;
+
+   word_t last_address;
+   logic 		  last_replace_block, last_REN;
    
    flush_cnt_t flush_cnt;
    logic 		  flush_cnt_en;
    
    assign dmemaddr = dcachef_t'(dcif.dmemaddr);
+   assign last_dmemaddr = dcachef_t'(last_address);
    
    twoway_dcache_t [7:0]dcache;
    twoway_dcache_t [7:0]dcache_next; 
 
+   logic 		  write_done;
    logic 		  hit0, hit1, replace_block;
    logic [1:0] 		  dirty, valid;
    assign replace_block = ~valid[0]? 0 : ~valid[1]? 1: ~dcache[dmemaddr.idx].recent;
@@ -46,7 +53,23 @@ module dcache(input logic CLK,
       end
    end
 
-   always_ff @(posedge CLK, negedge nRST) begin
+   always_ff @(posedge CLK, negedge nRST) begin //Load FF
+      if (!nRST) begin
+	 last_replace_block <= 0;
+	 last_address <= 0;
+	 last_REN <= 0;
+      end else if (address_lock)begin
+	 last_address <= last_address;
+	 last_replace_block <= last_replace_block;
+	 last_REN <= dcif.dmemREN;
+      end else begin
+	 last_address <= dcif.dmemaddr;
+	 last_replace_block <= replace_block;
+	 last_REN <= dcif.dmemREN;
+      end
+   end
+   
+   always_ff @(posedge CLK, negedge nRST) begin // Flush counter FF
       if (!nRST) begin
    	 flush_cnt <= 0;
       end else if (flush_cnt_en) begin
@@ -75,13 +98,15 @@ module dcache(input logic CLK,
       if (hit0 & dcif.dmemREN) begin
    	 dcif.dmemload = dcache[dmemaddr.idx].block[0].data[dmemaddr.blkoff];
    	 dcif.dhit = 1;
-      end else if (hit1 & dcif.dmemREN) begin
+      end else if (hit1 & dcif.dmemaddr) begin
    	 dcif.dmemload = dcache[dmemaddr.idx].block[1].data[dmemaddr.blkoff];
    	 dcif.dhit = 1;
-      end else if ((hit1 | hit0) & dcif.dmemWEN) begin
+      end else if (dcif.dmemWEN) begin
+	 dcif.dhit = write_done;
+      end else if ((state == LOAD2) & last_REN) begin
 	 dcif.dhit = 1;
+	 dcif.dmemload = dcache[last_dmemaddr.idx].block[last_replace_block].data[last_dmemaddr.blkoff];
       end
-      
    end // always_comb begin
 
    always_comb begin //Next State Logic
@@ -94,6 +119,8 @@ module dcache(input logic CLK,
       dcif.flushed = 0;
       counter_EN = 0;
       flush_cnt_en = 0;
+      address_lock = 0;
+      write_done = 0;
       
       case(state)
 	IDLE1: begin
@@ -103,6 +130,7 @@ module dcache(input logic CLK,
 	      if (hit0) begin //block0 hit
 		 dcache_next[dmemaddr.idx].recent = 0;
 		 if (dcif.dmemWEN) begin
+		    write_done = 1;
 		    dcache_next[dmemaddr.idx].block[0].dirty = 1;
 		    dcache_next[dmemaddr.idx].block[0].data[dmemaddr.blkoff] = dcif.dmemstore;
 		 end
@@ -112,6 +140,7 @@ module dcache(input logic CLK,
 	      end else if (hit1) begin //block1 hit
 		 dcache_next[dmemaddr.idx].recent = 1;
 		 if (dcif.dmemWEN) begin
+		    write_done = 1;
 		    dcache_next[dmemaddr.idx].block[1].dirty = 1;
 		    dcache_next[dmemaddr.idx].block[1].data[dmemaddr.blkoff] = dcif.dmemstore;
 		 end
@@ -134,17 +163,20 @@ module dcache(input logic CLK,
 	      dcache_next[dmemaddr.idx].block[replace_block].data[dmemaddr.blkoff] = ccif.dload;
 	      nextstate = LOAD2;
 	   end
+	   address_lock = 1;
 	   ccif.dREN = 1;
 	end
 
 	LOAD2: begin
 	   if (!ccif.dwait) begin
-	      dcache_next[dmemaddr.idx].block[replace_block].data[~dmemaddr.blkoff] = ccif.dload;
-	      dcache_next[dmemaddr.idx].block[replace_block].valid = 1;
-	      dcache_next[dmemaddr.idx].block[replace_block].tag = dmemaddr.tag;
+	      dcache_next[last_dmemaddr.idx].block[last_replace_block].data[~last_dmemaddr.blkoff] = ccif.dload;
+	      dcache_next[last_dmemaddr.idx].block[last_replace_block].valid = 1;
+	      dcache_next[last_dmemaddr.idx].block[last_replace_block].tag = last_dmemaddr.tag;
+	      dcache_next[last_dmemaddr.idx].recent = last_replace_block; 
 	      nextstate = IDLE1;
 	   end
-	   ccif.daddr = {dmemaddr.tag, dmemaddr.idx, ~dmemaddr.blkoff, dmemaddr.bytoff};
+	   address_lock = 1;
+	   ccif.daddr = {last_dmemaddr.tag, last_dmemaddr.idx, ~last_dmemaddr.blkoff, last_dmemaddr.bytoff};
 	   ccif.dREN = 1;
 	end
 
