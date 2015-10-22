@@ -98,7 +98,7 @@ module dcache(input logic CLK,
       if (hit0 & dcif.dmemREN) begin
    	 dcif.dmemload = dcache[dmemaddr.idx].block[0].data[dmemaddr.blkoff];
    	 dcif.dhit = 1;
-      end else if (hit1 & dcif.dmemaddr) begin
+      end else if (hit1 & dcif.dmemREN) begin
    	 dcif.dmemload = dcache[dmemaddr.idx].block[1].data[dmemaddr.blkoff];
    	 dcif.dhit = 1;
       end else if (dcif.dmemWEN) begin
@@ -243,18 +243,6 @@ module dcache(input logic CLK,
    end // always_comb begin
 endmodule // dcache
 
-	   
-	
-	   // 	   if ({dcache[flush_cnt.index].block[flush_cnt.set].tag,
-	   // 	flush_cnt.index,flush_cnt.word_sel, 2'b00} == 32'h3100) begin
-	   //    if (!ccif.dwait) begin
-	   // 	 nextstate = FLUSH_NEXT;
-	   //    end
-	   //    ccif.dWEN = 1;
-	   //    ccif.daddr = 32'h3100;
-	   //    ccif.dstore = counter;
-	   // end else 
-	      
 		 
 	      
 	   
