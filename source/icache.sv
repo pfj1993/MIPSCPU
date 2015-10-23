@@ -18,7 +18,7 @@ module icache(input logic CLK,
    istate_t state, nextstate;
    icachef_t imemaddr;
 
-   logic 		  hit;
+   logic 		  hit,load;
 
    assign hit = icache[imemaddr.idx].valid & (icache[imemaddr.idx].tag == imemaddr.tag);
 
@@ -45,8 +45,8 @@ module icache(input logic CLK,
    always_comb begin //Next State logic
       ccif.iREN = 1;
       dcif.ihit = 0;
-      dcif.imemload = BAD;
-      nextstate = IDLE;
+      dcif.imemload = ccif.iload;
+      nextstate = state;
       
       case(state)
 	IDLE: begin
@@ -59,9 +59,9 @@ module icache(input logic CLK,
 	end
 	LOAD : begin
 	   dcif.ihit = ~ccif.iwait;
-	   dcif.imemload = ccif.iload;
-	   if (ccif.iwait) begin
-	      nextstate = LOAD;
+	   if (~ccif.iwait) begin
+	      load = 1;
+	      nextstate = IDLE;
 	   end
 	end
 	endcase // case (state)
