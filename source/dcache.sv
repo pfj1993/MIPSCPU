@@ -32,13 +32,13 @@ module dcache(input logic CLK,
    assign last_dmemaddr = dcachef_t'(last_address);
    
    twoway_dcache_t [7:0]dcache;
-   twoway_dcache_t [7:0]dcache_next; 
+   twoway_dcache_t [7:0]dcache_next;
+   
 
-   word_t[1:0]  WB_buffer_data;
-   word_t[1:0]  WB_buffer_addr;
-   word_t [1:0] 		  WB_addr;
-   word_t [1:0]                   WB_data;
+   word_t[1:0]  WB_buffer_data, WB_buffer_addr;
+   word_t [1:0] 		  WB_addr, WB_data;
    logic 		  WB;
+   
    logic 		  write_done;
    logic 		  hit0, hit1, replace_block;
    logic [1:0] 		  dirty, valid;
@@ -155,6 +155,16 @@ module dcache(input logic CLK,
       write_done = 0;
       latch = 0;
       empty = 0;
+
+      if (dcif.dmemWEN & hit0) begin
+	 write_done = 1;
+	 dcache_next[dmemaddr.idx].block[0].dirty = 1;
+	 dcache_next[dmemaddr.idx].block[0].data[dmemaddr.blkoff] = dcif.dmemstore;
+      end else if (dcif.dmemWEN & hit1) begin
+	 write_done = 1;
+	 dcache_next[dmemaddr.idx].block[1].dirty = 1;
+	 dcache_next[dmemaddr.idx].block[1].data[dmemaddr.blkoff] = dcif.dmemstore;
+      end
       
       case(state)
 	IDLE1: begin
@@ -163,21 +173,11 @@ module dcache(input logic CLK,
 	   end else if (dcif.dmemREN | dcif.dmemWEN) begin
 	      if (hit0) begin //block0 hit
 		 dcache_next[dmemaddr.idx].recent = 0;
-		 if (dcif.dmemWEN) begin
-		    write_done = 1;
-		    dcache_next[dmemaddr.idx].block[0].dirty = 1;
-		    dcache_next[dmemaddr.idx].block[0].data[dmemaddr.blkoff] = dcif.dmemstore;
-		 end
 		 if (laststate == IDLE1) begin // Cache hit count
 		    counter_EN = 1;
 		 end
 	      end else if (hit1) begin //block1 hit
 		 dcache_next[dmemaddr.idx].recent = 1;
-		 if (dcif.dmemWEN) begin
-		    write_done = 1;
-		    dcache_next[dmemaddr.idx].block[1].dirty = 1;
-		    dcache_next[dmemaddr.idx].block[1].data[dmemaddr.blkoff] = dcif.dmemstore;
-		 end
 		 if (laststate == IDLE1) begin //Cache hit count
 		    counter_EN = 1;
 		 end
@@ -192,16 +192,15 @@ module dcache(input logic CLK,
 	
 	LOAD1: begin
 	   if (!ccif.dwait) begin
-	      dcache_next[dmemaddr.idx].block[replace_block].data[dmemaddr.blkoff] = ccif.dload;
 	      nextstate = LOAD2;
 	   end
+	   dcache_next[dmemaddr.idx].block[replace_block].data[dmemaddr.blkoff] = ccif.dload;
 	   address_lock = 1;
 	   ccif.dREN = 1;
 	end
 
 	LOAD2: begin
 	   if (!ccif.dwait) begin
-	      dcache_next[last_dmemaddr.idx].block[last_replace_block].data[~last_dmemaddr.blkoff] = ccif.dload;
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].valid = 1;
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].tag = last_dmemaddr.tag;
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].dirty = 0;
@@ -211,7 +210,8 @@ module dcache(input logic CLK,
 	      end else begin
 		 nextstate = WRITE_BACK1;
 	      end
-	   end
+	   end // if (!ccif.dwait)
+	   dcache_next[last_dmemaddr.idx].block[last_replace_block].data[~last_dmemaddr.blkoff] = ccif.dload;
 	   address_lock = 1;
 	   ccif.daddr = {last_dmemaddr.tag, last_dmemaddr.idx, ~last_dmemaddr.blkoff, last_dmemaddr.bytoff};
 	   ccif.dREN = 1;
