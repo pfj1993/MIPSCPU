@@ -34,14 +34,46 @@ module dcache(input logic CLK,
    twoway_dcache_t [7:0]dcache;
    twoway_dcache_t [7:0]dcache_next; 
 
+   word_t[1:0]  WB_buffer_data;
+   word_t[1:0]  WB_buffer_addr;
+   word_t [1:0] 		  WB_addr;
+   word_t [1:0]                   WB_data;
+   logic 		  WB;
    logic 		  write_done;
    logic 		  hit0, hit1, replace_block;
    logic [1:0] 		  dirty, valid;
+   logic 		  latch;
+   logic 		  empty;
+   
    assign replace_block = ~valid[0]? 0 : ~valid[1]? 1: ~dcache[dmemaddr.idx].recent;
+   assign WB_addr = {{dcache[dmemaddr.idx].block[replace_block].tag, dmemaddr.idx,
+		      1'b1, dmemaddr.bytoff},{dcache[dmemaddr.idx].block[replace_block].tag, dmemaddr.idx, 
+					      1'b0, dmemaddr.bytoff}};
+   assign WB_data = dcache[dmemaddr.idx].block[replace_block].data;
    assign dirty = {dcache[dmemaddr.idx].block[1].dirty, dcache[dmemaddr.idx].block[0].dirty};
    assign valid = {dcache[dmemaddr.idx].block[1].valid, dcache[dmemaddr.idx].block[0].valid};
    assign hit0 = (dcache[dmemaddr.idx].block[0].tag == dmemaddr.tag) & valid[0];
    assign hit1 = (dcache[dmemaddr.idx].block[1].tag == dmemaddr.tag) & valid[1];
+
+   always_ff @(posedge CLK, negedge nRST) begin // Write back buffer
+      if (!nRST) begin
+	 WB_buffer_data <= '{default:'0};
+	 WB_buffer_addr <= '{default:'0};
+	 WB <= 0;
+      end else if (latch) begin
+	 WB_buffer_data <= WB_data;
+	 WB_buffer_addr <= WB_addr;
+	 WB <= 1;
+      end else if (empty)begin
+	 WB_buffer_data <= '{default:'0};
+	 WB_buffer_addr <= '{default:'0};
+	 WB <= 0;
+      end else begin
+	 WB_buffer_data <= WB_buffer_data;
+	 WB_buffer_addr <= WB_buffer_addr;
+	 WB <= WB;
+      end
+   end
    
    always_ff @(posedge CLK, negedge nRST) begin // 32bits counter to counter cache hit
       if (!nRST) begin
@@ -121,6 +153,8 @@ module dcache(input logic CLK,
       flush_cnt_en = 0;
       address_lock = 0;
       write_done = 0;
+      latch = 0;
+      empty = 0;
       
       case(state)
 	IDLE1: begin
@@ -148,12 +182,10 @@ module dcache(input logic CLK,
 		    counter_EN = 1;
 		 end
 	      end else begin//Miss
-		 if (dirty[replace_block] & valid[replace_block]) begin
-		    //Find out if not LRU block is dirty
-		    nextstate = WRITE_BACK1;
-		 end else begin
-		    nextstate = LOAD1;
+		 if (dirty[replace_block] & valid[replace_block]) begin //Find out if not LRU block is dirty
+		    latch = 1;
 		 end
+		    nextstate = LOAD1;
 	      end // else: !if(hit1)
 	   end // if (dcif.dmemREN | dcif.dmemWEN)
 	end // case: IDEL
@@ -172,8 +204,13 @@ module dcache(input logic CLK,
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].data[~last_dmemaddr.blkoff] = ccif.dload;
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].valid = 1;
 	      dcache_next[last_dmemaddr.idx].block[last_replace_block].tag = last_dmemaddr.tag;
-	      dcache_next[last_dmemaddr.idx].recent = last_replace_block; 
-	      nextstate = IDLE1;
+	      dcache_next[last_dmemaddr.idx].block[last_replace_block].dirty = 0;
+	      dcache_next[last_dmemaddr.idx].recent = last_replace_block;
+	      if (!WB) begin
+		 nextstate = IDLE1;
+	      end else begin
+		 nextstate = WRITE_BACK1;
+	      end
 	   end
 	   address_lock = 1;
 	   ccif.daddr = {last_dmemaddr.tag, last_dmemaddr.idx, ~last_dmemaddr.blkoff, last_dmemaddr.bytoff};
@@ -185,20 +222,18 @@ module dcache(input logic CLK,
 	      nextstate = WRITE_BACK2;
 	   end
 	   ccif.dWEN = 1;
-	   ccif.daddr = {dcache[dmemaddr.idx].block[replace_block].tag, dmemaddr.idx,
-			 1'b0, dmemaddr.bytoff};
-	   ccif.dstore = dcache[dmemaddr.idx].block[replace_block].data[0];
+	   ccif.dstore = WB_buffer_data[0];
+	   ccif.daddr = WB_buffer_addr[0];
 	end
 	
 	WRITE_BACK2: begin // Write higher word into memory
 	   if (!ccif.dwait) begin
-	      nextstate = LOAD1;
-	      dcache_next[dmemaddr.idx].block[replace_block].dirty = 0;
+	      empty = 1;
+	      nextstate = IDLE1;
 	   end
 	   ccif.dWEN = 1;
-	   ccif.dstore = dcache[dmemaddr.idx].block[replace_block].data[1];
-	   ccif.daddr = {dcache[dmemaddr.idx].block[replace_block].tag, dmemaddr.idx, 
-			 1'b1, dmemaddr.bytoff};
+	   ccif.dstore = WB_buffer_data[1];
+	   ccif.daddr = WB_buffer_addr[1];
 	end
 
 	FLUSH: begin //Flush the cache back to memory
