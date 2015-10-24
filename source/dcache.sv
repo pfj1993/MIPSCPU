@@ -21,9 +21,9 @@ module dcache(input logic CLK,
    
    word_t counter;
    logic 		  counter_EN;
-
+   
    word_t last_address;
-   logic 		  last_replace_block, last_REN;
+   logic 		  last_replace_block, last_WEN, last_hit;
    
    flush_cnt_t flush_cnt;
    logic 		  flush_cnt_en;
@@ -89,15 +89,18 @@ module dcache(input logic CLK,
       if (!nRST) begin
 	 last_replace_block <= 0;
 	 last_address <= 0;
-	 last_REN <= 0;
+	 last_WEN <= 0;
+	 last_hit <= 0;
       end else if (address_lock)begin
 	 last_address <= last_address;
 	 last_replace_block <= last_replace_block;
-	 last_REN <= dcif.dmemREN;
+	 last_WEN <= dcif.dmemWEN;
+	 last_hit <= (hit0 | hit1) & (dcif.dmemWEN | dcif.dmemREN);
       end else begin
 	 last_address <= dcif.dmemaddr;
 	 last_replace_block <= replace_block;
-	 last_REN <= dcif.dmemREN;
+	 last_WEN <= dcif.dmemWEN;
+	 last_hit <= (hit0 | hit1) & (dcif.dmemWEN | dcif.dmemREN);
       end
    end
    
@@ -135,7 +138,7 @@ module dcache(input logic CLK,
    	 dcif.dhit = 1;
       end else if (dcif.dmemWEN) begin
 	 dcif.dhit = write_done;
-      end else if ((state == LOAD2) & last_REN) begin
+      end else if ((state == LOAD2) & dcif.dmemREN & (laststate == LOAD1)) begin
 	 dcif.dhit = 1;
 	 dcif.dmemload = dcache[last_dmemaddr.idx].block[last_replace_block].data[last_dmemaddr.blkoff];
       end
@@ -173,12 +176,12 @@ module dcache(input logic CLK,
 	   end else if (dcif.dmemREN | dcif.dmemWEN) begin
 	      if (hit0) begin //block0 hit
 		 dcache_next[dmemaddr.idx].recent = 0;
-		 if (laststate == IDLE1) begin // Cache hit count
+		 if (laststate == IDLE1 | laststate == WRITE_BACK2 | (laststate == LOAD2 & (~dcif.dmemWEN | (~last_WEN | last_hit)))) begin // Cache hit count
 		    counter_EN = 1;
 		 end
 	      end else if (hit1) begin //block1 hit
 		 dcache_next[dmemaddr.idx].recent = 1;
-		 if (laststate == IDLE1) begin //Cache hit count
+		 if (laststate == IDLE1 | laststate == WRITE_BACK2 | (laststate == LOAD2 & (~dcif.dmemWEN | (~last_WEN | last_hit)))) begin //Cache hit count
 		    counter_EN = 1;
 		 end
 	      end else begin//Miss
@@ -211,6 +214,7 @@ module dcache(input logic CLK,
 		 nextstate = WRITE_BACK1;
 	      end
 	   end // if (!ccif.dwait)
+	   counter_EN = (hit0 | hit1) & (dcif.dmemREN | dcif.dmemWEN) & (laststate != LOAD1);
 	   dcache_next[last_dmemaddr.idx].block[last_replace_block].data[~last_dmemaddr.blkoff] = ccif.dload;
 	   address_lock = 1;
 	   ccif.daddr = {last_dmemaddr.tag, last_dmemaddr.idx, ~last_dmemaddr.blkoff, last_dmemaddr.bytoff};
@@ -221,6 +225,7 @@ module dcache(input logic CLK,
 	   if (!ccif.dwait) begin
 	      nextstate = WRITE_BACK2;
 	   end
+	   counter_EN = (hit0 | hit1) & ((dcif.dmemREN) | ((~(laststate == LOAD2) | (~dcif.dmemWEN | (~last_WEN | last_hit))) & dcif.dmemWEN));
 	   ccif.dWEN = 1;
 	   ccif.dstore = WB_buffer_data[0];
 	   ccif.daddr = WB_buffer_addr[0];
@@ -231,6 +236,7 @@ module dcache(input logic CLK,
 	      empty = 1;
 	      nextstate = IDLE1;
 	   end
+	   counter_EN = (hit0 | hit1) & (dcif.dmemREN | dcif.dmemWEN);
 	   ccif.dWEN = 1;
 	   ccif.dstore = WB_buffer_data[1];
 	   ccif.daddr = WB_buffer_addr[1];
@@ -262,17 +268,20 @@ module dcache(input logic CLK,
 	      flush_cnt_en = 1;
 	      nextstate = FLUSH;
 	   end else begin
-	      nextstate = CACHE_HALT;
+	      nextstate = COUNTER;
 	   end
 	end
 
-	CACHE_HALT: begin
+	COUNTER: begin
 	   if (!ccif.dwait) begin
-	      dcif.flushed = 1;
+	      nextstate = CACHE_HALT;
 	   end
 	   ccif.dWEN = 1;
 	   ccif.dstore = counter;
 	   ccif.daddr = 32'h00003100;
+	end
+	CACHE_HALT: begin
+	   dcif.flushed = 1;
 	end
       endcase // case (state)
    end // always_comb begin

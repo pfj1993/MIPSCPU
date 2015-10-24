@@ -44,6 +44,7 @@ package cache_pkg;
 			  LOAD2,
 			  FLUSH,
 			  FLUSH_NEXT,
+			  COUNTER,
 			  CACHE_HALT
 			  } dstate_t;
    
