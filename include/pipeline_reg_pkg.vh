@@ -65,7 +65,6 @@ package pipeline_reg_pkg;
       word_t     br_target;  
       logic [1:0] MemtoReg;
       word_t	  alu_out;
-      word_t 	  dload;
       regbits_t   RegDst_out;
       word_t	  pc_plus4;
       word_t	  rdat_2;

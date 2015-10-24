@@ -247,40 +247,10 @@ module datapath (
 
    always_ff @(posedge CLK, negedge nRST) begin
       if (!nRST) begin
-	 exmem.imm <= 0;
-	 exmem.RegWEN <= 0;
-	 exmem.zero <= 0;
-	 exmem.overflow <= 0;
-	 exmem.bra <= 0;
-	 exmem.MemtoReg <= 0;
-	 exmem.MemRead <= 0;
-	 exmem.MemWrite <= 0;
-	 exmem.alu_out <= 0;
-	 exmem.RegDst_out <= 0;
-	 exmem.pc_plus4 <= 0;
-	 exmem.rdat_2 <= 0;
-	 exmem.halt <= 0;
-	 exmem.predict <= 0;
-	 exmem.index <= 0;
-	 exmem.br_target <= 0;
+	 exmem <= 0;
       end else if (exmem_en) begin // if (!nRST)
 	 if (exmem_flush) begin
-	    exmem.imm <= 0;
-	    exmem.RegWEN <= 0;
-	    exmem.zero <= 0;
-	    exmem.overflow <= 0;
-	    exmem.bra <= 0;
-	    exmem.MemtoReg <= 0;
-	    exmem.MemRead <= 0;
-	    exmem.MemWrite <= 0;
-	    exmem.alu_out <= 0;
-	    exmem.RegDst_out <= 0;
-	    exmem.pc_plus4 <= 0;
-	    exmem.rdat_2 <= 0;
-	    exmem.halt <= 0;
-	    exmem.predict <= 0;
-	    exmem.index <= 0;
-	    exmem.br_target <= 0;
+	    exmem <= 0;
 	 end else begin 
 	    exmem.imm <= idex.imm;
 	    exmem.RegWEN <= idex.RegWEN;
@@ -300,44 +270,28 @@ module datapath (
 	    exmem.halt <= halt;
 	 end // else: !if(exmem_flush)
       end else begin
-	 exmem.imm <= exmem.imm;
-	 exmem.RegWEN <= exmem.RegWEN;
-	 exmem.zero <= exmem.zero;
-	 exmem.overflow <= exmem.overflow;
-	 exmem.bra <= exmem.bra;
-	 exmem.predict <= exmem.predict;
-	 exmem.index <= exmem.index;
-	 exmem.br_target <= exmem.br_target;
-	 exmem.MemtoReg <= exmem.MemtoReg;
-	 exmem.MemRead <= exmem.MemRead;
-	 exmem.MemWrite <= exmem.MemWrite;
-	 exmem.alu_out <= exmem.alu_out;
-	 exmem.RegDst_out <= exmem.RegDst_out;
-	 exmem.pc_plus4 <= exmem.pc_plus4;
-	 exmem.rdat_2 <= exmem.rdat_2;
-	 exmem.halt <= exmem.halt;
+	 exmem <= exmem;
+
       end
    end // always_ff @ (posedge CLK, negedge n_RST)
-   assign exmem.dload = dpif.dmemload;
 
 
   //*******************************Branch Prediction Check*******************************//
    always_comb begin
       br = 0;
-      predict_fail = 0;
+      predict_fail = 1;
       casez(exmem.bra)
 	2'b01:begin
-	   br = exmem.zero? 1 : 0;
+	   br = exmem.zero;
 	end
 	2'b10: begin
-	   br = ~exmem.zero? 1 : 0;
+	   br = ~exmem.zero;
 	end //
       endcase // casez (exme.bra)
-      if ((((br == exmem.predict) & (br == 1)) & (PC_branch == exmem.br_target)) 
-	  | ((br == exmem.predict) & (br == 0)) | (exmem.bra == 0)) begin
+      
+      if (((br == exmem.predict) & ((br & (PC_branch == exmem.br_target)) 
+	  | !br)) | !exmem.bra) begin
 	 predict_fail = 0;
-      end else begin
-	 predict_fail = 1;
       end
    end // always_comb begin   
    //***********************************************************************************//
@@ -352,7 +306,7 @@ module datapath (
 	 mem.MemtoReg <= exmem.MemtoReg;
 	 mem.RegWEN <= exmem.RegWEN;
 	 mem.halt <= exmem.halt;
-	 mem.dload <= exmem.dload;
+	 mem.dload <= dpif.dmemload;
 	 mem.alu_out <= exmem.alu_out;
 	 mem.RegDst_out <= exmem.RegDst_out;
 	 mem.pc_plus4 <= exmem.pc_plus4;
