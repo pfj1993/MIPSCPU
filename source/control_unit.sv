@@ -116,10 +116,9 @@ module control_unit(control_unit_if.cu cuif);
 	SLTI:begin
 	   cuif.ALU_op = ALU_SLT;
 	   cuif.Ext_src = 1;
-	   cuif.check_over = 1;
 	end
 	SLTIU:begin
-	   cuif.ALU_op = ALU_SLT;
+	   cuif.ALU_op = ALU_SLTU;
 	   cuif.Ext_src = 1;
 	end
 	ORI:begin
