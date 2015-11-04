@@ -47,13 +47,11 @@ module system (input logic CLK, nRST, system_if.sys syif);
 
   // processor
   //singlecycle #(.PC0('h0))              CPU (CPUCLK, nRST, halt, prif);
-<<<<<<< HEAD
-  pipeline    #(.PC0('h0))              CPU (CPUCLK, nRST, halt, prif);
+  //pipeline    #(.PC0('h0))              CPU (CPUCLK, nRST, halt, prif);
   //multicore   #(.PC0('h0), .PC1('h200)) CPU (CLK, nRST, halt, prif);
-=======
   //pipeline    #(.PC0('h0))              CPU (CPUCLK, nRST, halt, prif);
   multicore   #(.PC0('h0), .PC1('h200)) CPU (CPUCLK, nRST, halt, prif);
->>>>>>> 249050928643769724f18ca6662802967b5b838a
+
 
   // memory
   ram                                   RAM (CLK, nRST, prif);
