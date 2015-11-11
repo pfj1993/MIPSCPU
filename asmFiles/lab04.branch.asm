@@ -21,4 +21,8 @@ corr:
 
 corr2:
 	ori $5, $0, 0x34
-	j   end	
+	j   end
+
+
+  org   0x0200
+	halt

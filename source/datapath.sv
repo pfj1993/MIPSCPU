@@ -25,7 +25,7 @@ module datapath (
    import pipeline_reg_pkg::*;
    // pc init
    parameter PC_INIT = 0;
-   
+   parameter CPUID = 0;
    //if import
    hazard_unit_if huif();
    register_file_if rfif();
@@ -48,9 +48,7 @@ module datapath (
    word_t PC_next, PC, out, portb_mux_out, forward_a, forward_b, memadd_forward;
    logic [2:0] 		     PC_src;
    word_t PC_plus4, PC_branch, PC_reg, PC_jump;
-   //units map
-   pc PC1(PC_en, PC_next, CLK, nRST, PC);
-   
+   //units map  
    register_file RF(CLK, nRST, rfif);
    
    alu ALU(forward_a, forward_b, idex.ALU_op, negative, overflow, zero, out);
@@ -78,7 +76,7 @@ module datapath (
    assign ifid_flush = (~PC_en | oneState_flush | threeStates_flush);
    assign idex_en = ~mem.halt & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
-   assign idex_flush = threeStates_flush | (huif.stall & ~predict_fail) & PC_en;
+   assign idex_flush = (threeStates_flush & PC_en) | (huif.stall & ~predict_fail);
    assign exmem_en = ~mem.halt & ~((PC_src == 3'b101 | PC_src == 3'b001) & ~PC_en) & 
 		    (~(exmem.MemRead | exmem.MemWrite) | dpif.dhit);
    assign exmem_flush = threeStates_flush & PC_en;
@@ -91,6 +89,16 @@ module datapath (
    word_t IntoMem, IntoLUI;
 
    //*********************************PC Select Logic*******************************//
+   
+   //PC Reg
+   always_ff @(posedge CLK,negedge nRST) begin
+      if (!nRST) begin
+	 PC <= PC_INIT;
+      end else if(PC_en) begin
+	 PC <= PC_next;
+      end
+   end
+     
    logic 		     br;
    always_comb begin
       PC_src = 3'b000;//default state, nextPC = PC_plus4
@@ -229,6 +237,7 @@ module datapath (
 	    idex.MemtoReg <= cuif.MemtoReg;
 	    idex.check_over <= cuif.check_over;
 	    idex.mem_halt <= cuif.mem_halt;
+	    idex.datomic <= cuif.datomic;
 	 end
       end else begin // else: !if(!nRST)
 	 idex <= idex;
@@ -267,6 +276,7 @@ module datapath (
 	    exmem.RegDst_out <= RWD_out;
 	    exmem.pc_plus4 <= idex.pc_plus4;
 	    exmem.rdat_2 <= memadd_forward;
+	    exmem.datomic <= idex.datomic;
 	    exmem.halt <= halt;
 	 end // else: !if(exmem_flush)
       end else begin
@@ -419,6 +429,7 @@ module datapath (
    assign dpif.dmemWEN = exmem.MemWrite;
    assign dpif.dmemstore = exmem.rdat_2;
    assign dpif.dmemaddr = exmem.alu_out;
+   assign dpif.datomic = exmem.datomic;
    //***********************************************************************************//
    
    //************************Branch Predict Block I/O Assignment************************//

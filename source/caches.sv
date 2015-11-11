@@ -12,11 +12,11 @@ module caches (
   cache_control_if ccif
 );
   parameter CPUID = 0;
-
-  // icache
-  icache  ICACHE(CLK, nRST, dcif.icache, ccif.icache);
-  // dcache
-  dcache  DCACHE(CLK, nRST, dcif.dcache, ccif.dcache);
+   
+   // icache
+   icache #(.CPUID(CPUID)) ICACHE(CLK, nRST, dcif.icache, ccif.icache);
+   // dcache
+   dcache #(.CPUID(CPUID)) DCACHE(CLK, nRST, dcif.dcache, ccif.dcache);
 
   // dcache invalidate before halt handled by dcache when exists
   //assign dcif.flushed = dcif.halt; // 

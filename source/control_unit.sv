@@ -22,6 +22,7 @@ module control_unit(control_unit_if.cu cuif);
       cuif.mem_halt = 0;
       cuif.bra = 0;
       cuif.rw_flag = 1;
+      cuif.datomic = 0;
       //******************//
       
       casez(cuif.opcode)
@@ -144,11 +145,19 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.MemWrite = 1;
 	   cuif.RegDst = 2'b00;
 	end
-	LL:begin
-	   cuif.rw_flag = 0;
+	LL: begin
+	   cuif.ALU_op = ALU_ADD;
+	   cuif.Ext_src = 1;
+	   cuif.MemtoReg = 2'b01;
+	   cuif.MemRead = 1;
+	   cuif.datomic = 1;
 	end
-	SC:begin
-	   cuif.rw_flag = 0;
+	SC: begin
+	   cuif.ALU_op = ALU_ADD;
+	   cuif.Ext_src = 1;
+	   cuif.MemWrite = 1;
+	   cuif.RegDst = 2'b01;
+	   cuif.datomic = 1;
 	end
 	HALT:begin
 	   cuif.rw_flag = 0;

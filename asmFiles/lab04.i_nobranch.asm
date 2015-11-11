@@ -26,3 +26,6 @@ org 0x0000
   sw    $9,24($21)
   sw    $10,28($21)
   halt  # that's all
+
+  org   0x0200
+	halt

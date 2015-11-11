@@ -44,7 +44,8 @@ package pipeline_reg_pkg;
       logic	 [1:0] bra;// 2'b00 for no branch, 2'b01 for BNE, 2'b10 for BEQ
       logic      [2:0] index;
       word_t     br_target;
-      logic      predict;   
+      logic      predict;
+      logic 	 datomic;   
    }idex_p;
    
    //************************************//
@@ -68,6 +69,7 @@ package pipeline_reg_pkg;
       regbits_t   RegDst_out;
       word_t	  pc_plus4;
       word_t	  rdat_2;
+      logic 	  datomic;
    }exmem_p;
 
    //************************************//
