@@ -18,11 +18,11 @@ module dcache(input logic CLK,
    dcachef_t dmemaddr, last_dmemaddr, snoopaddr;
    
    link_module_if lmif();
-   
    link_module LM(CLK, nRST, lmif);
    assign lmif.addr_cpu = dcif.dmemaddr;
    assign lmif.addr_bus = ccif.ccsnoopaddr;
-
+   logic 		  atomic_faild;
+   
    logic 		  address_lock;
 
    logic 		  snoopy_set, next_snoopy_set; 		  
@@ -172,10 +172,13 @@ module dcache(input logic CLK,
       latch = 0;
       empty = 0;
       next_snoopy_set = snoopy_set;
-      lmif.update = 0;
-      lmif.invalid = 0;
+      lmif.update = dcif.datomic & dcif.dmemREN;
+      lmif.invalid_cpu = 0;
+      lmif.invalid_bus = 0;
       go_snoopy = 0;
-     
+      atomic_faild = 0;
+      datomic_reply = 0;
+      
       case(state)
 	IDLE1: begin
 	   if (ccif.ccwait[CPUID]) begin
@@ -245,15 +248,17 @@ module dcache(input logic CLK,
 	   end else if (~ccif.dwait[CPUID]) begin
 	      nextstate = IDLE1;
 	   end
-	   write_done = ~ccif.dwait[CPUID] & ~ccif.ccwait[CPUID];
 	   if ((~dcif.datomic | lmif.write_valid) & ~ccif.ccwait[CPUID]) begin
 	      datomic_reply = 0;
 	      ccif.ccwrite[CPUID] = 1;
 	      dcache_next[dmemaddr.idx].block[hit1 & !hit0].MESI = MODIFIED;
 	      dcache_next[dmemaddr.idx].block[hit1 & !hit0].data[dmemaddr.blkoff] = dcif.dmemstore;
+	      lmif.invalid_cpu = dcif.datomic;
 	   end else begin
 	      datomic_reply = 1;
+	      atomic_faild = dcif.datomic;
 	   end
+	   write_done = (~ccif.dwait[CPUID] & ~ccif.ccwait[CPUID]) | atomic_faild;
 	end
 	
 	WRITE_BACK1: begin // Write lower word into memory
@@ -346,7 +351,7 @@ module dcache(input logic CLK,
 	
 	INV: begin
 	   dcache_next[snoopaddr.idx].block[snoopy_set].MESI = INVALID;
-	   lmif.invalid = 1;
+	   lmif.invalid_bus = 1;
 	   nextstate = SNOOPY_DONE;
 	end
 	

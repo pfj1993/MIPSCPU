@@ -156,7 +156,7 @@ module control_unit(control_unit_if.cu cuif);
 	   cuif.ALU_op = ALU_ADD;
 	   cuif.Ext_src = 1;
 	   cuif.MemWrite = 1;
-	   cuif.RegDst = 2'b01;
+	   cuif.MemtoReg = 2'b01;
 	   cuif.datomic = 1;
 	end
 	HALT:begin

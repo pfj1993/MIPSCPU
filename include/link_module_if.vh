@@ -10,10 +10,11 @@ interface link_module_if;
    word_t             addr_bus;
    logic 	      write_valid;
    logic	      update;
-   logic 	      invalid; 	      
+   logic 	      invalid_cpu;
+   logic	      invalid_bus; 	      
 
    modport lm (
-	       input  addr_cpu, addr_bus, update, invalid,
+	       input  addr_cpu, addr_bus, update, invalid_cpu, invalid_bus,
 	       output write_valid
 	       );
 endinterface

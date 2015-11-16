@@ -30,11 +30,13 @@ module link_module(
       next_addr = addr;
       next_valid = valid;
 
-      if (lmif.invalid & (lmif.addr_bus == addr)) begin
+      if (lmif.invalid_bus & (lmif.addr_bus == addr)) begin
+	 next_valid = 0;
+      end else if (lmif.invalid_cpu & (lmif.addr_cpu == addr)) begin
 	 next_valid = 0;
       end else if (lmif.update) begin
 	 next_valid = 1;
-	 next_addr =  lmif.addr_bus;
+	 next_addr =  lmif.addr_cpu;
       end
    end
 endmodule      
