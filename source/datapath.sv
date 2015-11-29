@@ -55,8 +55,8 @@ module datapath (
    
    control_unit CU(cuif);
    
-   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, r_inst.rs, r_inst.rt, 
-		  exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, huif);
+   hazard_unit HU(idex.rs, idex.rt_hazard, idex.MemRead, idex.MemWrite,r_inst.rs, r_inst.rt, 
+		  exmem.RegWEN, exmem.RegDst_out, mem.RegWEN, mem.RegDst_out, idex.MemWrite, idex.rt, idex.datomic, huif);
    
    br_prediction BP(CLK, nRST, bpif);
 
@@ -213,7 +213,7 @@ module datapath (
 	 end else begin
 	    idex.rdat_1 <= rfif.rdat1;
 	    idex.rdat_2 <= rfif.rdat2;
-	    idex.rt_hazard <= (cuif.RegDst != 2'b01)? r_inst.rt : 0;
+	    idex.rt_hazard <= ((cuif.RegDst != 2'b01) | (cuif.datomic & cuif.MemWrite))? r_inst.rt : 0;
 	    idex.rt <= r_inst.rt;
 	    idex.rd <= r_inst.rd;
 	    idex.rs <= r_inst.rs;

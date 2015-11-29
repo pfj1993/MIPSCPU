@@ -53,6 +53,11 @@ module dcache(input logic CLK,
    logic [1:0] 		  dirty, valid;
    logic 		  latch;
    logic 		  empty;
+   logic 		  inv;
+   logic 		  write_pass;
+   
+   
+   assign inv = dcache_next[dmemaddr.idx].block[hit1 & !hit0].MESI == INVALID;
    
    assign replace_block = ~valid[0]? 0 : ~valid[1]? 1: ~dcache[dmemaddr.idx].recent;
    assign WB_addr = {{dcache[dmemaddr.idx].block[replace_block].tag, dmemaddr.idx,
@@ -191,13 +196,13 @@ module dcache(input logic CLK,
 		 dcache_next[dmemaddr.idx].recent = 0;
 		 if (dcif.dmemWEN) begin
 		    nextstate = WRITE;
-		    ccif.ccwrite[CPUID] = 1;
+		    ccif.ccwrite[CPUID] = ~dcif.datomic;
 		 end
 	      end else if (hit1) begin //block1 hit
 		 dcache_next[dmemaddr.idx].recent = 1;
 		 if (dcif.dmemWEN) begin
 		    nextstate = WRITE;
-		    ccif.ccwrite[CPUID] = 1;
+		    ccif.ccwrite[CPUID] = ~dcif.datomic;
 		 end
 	      end else begin//Miss
 		 if (dirty[replace_block] & valid[replace_block]) begin //Find out if not LRU block is dirty
@@ -245,17 +250,17 @@ module dcache(input logic CLK,
 	   if (ccif.ccwait[CPUID]) begin
 	      nextstate = SNOOPY;
 	      go_snoopy = 1;
-	   end else if (~ccif.dwait[CPUID]) begin
+	   end else if (~(~dcif.datomic | lmif.write_valid) | ~ccif.dwait[CPUID] | inv) begin
 	      nextstate = IDLE1;
 	   end
-	   if ((~dcif.datomic | lmif.write_valid) & ~ccif.ccwait[CPUID]) begin
-	      datomic_reply = 0;
+	   if ((~dcif.datomic | lmif.write_valid) & ~ccif.ccwait[CPUID] & ~inv) begin
+	      datomic_reply = 1;
 	      ccif.ccwrite[CPUID] = 1;
 	      dcache_next[dmemaddr.idx].block[hit1 & !hit0].MESI = MODIFIED;
 	      dcache_next[dmemaddr.idx].block[hit1 & !hit0].data[dmemaddr.blkoff] = dcif.dmemstore;
-	      lmif.invalid_cpu = dcif.datomic;
-	   end else begin
-	      datomic_reply = 1;
+	      lmif.invalid_cpu = ~ccif.dwait[CPUID];
+	   end else if (~ccif.ccwait[CPUID]) begin
+	      datomic_reply = 0;
 	      atomic_faild = dcif.datomic;
 	   end
 	   write_done = (~ccif.dwait[CPUID] & ~ccif.ccwait[CPUID]) | atomic_faild;

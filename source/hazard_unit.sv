@@ -5,6 +5,7 @@ module hazard_unit(
 		   input regbits_t idex_rs,
 		   input regbits_t idex_rt,
 		   input logic MemRead,
+		   input logic MemWrite,
 		   input regbits_t ifid_rs,
 		   input regbits_t ifid_rt,
 		   input logic exmem_RegWEN,
@@ -13,6 +14,7 @@ module hazard_unit(
 		   input regbits_t mem_RegDst,
 		   input logic idex_MemWrite,
 		   input regbits_t stall_rt,
+		   input datomic,
 		   hazard_unit_if.hu huif
 		   );
    always_comb begin
@@ -21,7 +23,7 @@ module hazard_unit(
       huif.stall = 0;
       huif.memadd_forward = 0;
 
-      if (MemRead & ((stall_rt == ifid_rs) | (stall_rt == ifid_rt)) & (stall_rt != 0)) begin
+      if ((MemRead | (MemWrite & datomic)) & ((stall_rt == ifid_rs) | (stall_rt == ifid_rt)) & (stall_rt != 0)) begin
 	 huif.stall = 1;
       end
 
