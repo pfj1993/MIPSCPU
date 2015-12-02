@@ -14,13 +14,14 @@
 
 module memory_control (
 		       input CLK, nRST,
-		       cache_control_if.cc ccif
+		       output logic fifo_empty,
+		       cache_control_if ccif
 		       );
    // type import
    import cpu_types_pkg::*;
 
    coherence_control_if bus_if();
-   coherence_control COC(nRST, CLK, bus_if);
+   coherence_control COC(nRST, CLK, fifo_empty, bus_if);
    
    // number of cpus for cc
    parameter CPUS = 2;

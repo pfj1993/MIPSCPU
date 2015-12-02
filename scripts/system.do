@@ -2,38 +2,38 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /system_tb/CLK
 add wave -noupdate /system_tb/nRST
-add wave -noupdate -group ccif -expand /system_tb/DUT/CPU/CM0/ccif/iwait
-add wave -noupdate -group ccif -expand /system_tb/DUT/CPU/CM0/ccif/dwait
-add wave -noupdate -group ccif -expand /system_tb/DUT/CPU/CM0/ccif/iREN
-add wave -noupdate -group ccif -expand /system_tb/DUT/CPU/CM0/ccif/dREN
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/dWEN
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/iload
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/dload
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/dstore
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/iaddr
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/daddr
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ccwait
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ccinv
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ccwrite
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/cctrans
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ccsnoopaddr
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramWEN
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramREN
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramstate
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramaddr
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramstore
-add wave -noupdate -group ccif /system_tb/DUT/CPU/CM0/ccif/ramload
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/state
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/next_state
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/master
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/next_master
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/slave
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_empty
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_full
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_wen
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_ren
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_out
-add wave -noupdate -group coh /system_tb/DUT/CPU/CC/COC/fifo_in
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/iwait
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/dwait
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/iREN
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/dREN
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/dWEN
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/iload
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/dload
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/dstore
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/iaddr
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/daddr
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ccwait
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ccinv
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ccwrite
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/cctrans
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ccsnoopaddr
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramWEN
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramREN
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramstate
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramaddr
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramstore
+add wave -noupdate -group ccif /system_tb/DUT/CPU/ccif/ramload
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/state
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/next_state
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/master
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/next_master
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/slave
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_empty
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_full
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_wen
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_ren
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_out
+add wave -noupdate -expand -group coh /system_tb/DUT/CPU/CC/COC/fifo_in
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dcache_addr
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dcache_data
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/snoopy_addr
@@ -51,88 +51,6 @@ add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dload
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dWEN
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dREN
 add wave -noupdate -group bus /system_tb/DUT/CPU/CC/COC/bus_if/dwait
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/LM/addr
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/LM/valid
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/lmif/addr_cpu
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/lmif/addr_bus
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/lmif/write_valid
-add wave -noupdate -expand -group dcache0 -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/lmif/update
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/laststate
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/state
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/nextstate
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/dmemaddr
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/last_dmemaddr
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/snoopaddr
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/address_lock
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/snoopy_set
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/next_snoopy_set
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/last_address
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/last_replace_block
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/flush_cnt
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/flush_cnt_en
-add wave -noupdate -expand -group dcache0 -expand -subitemconfig {{/system_tb/DUT/CPU/CM0/DCACHE/dcache[1]} -expand {/system_tb/DUT/CPU/CM0/DCACHE/dcache[1].block} -expand {/system_tb/DUT/CPU/CM0/DCACHE/dcache[1].block[0]} -expand {/system_tb/DUT/CPU/CM0/DCACHE/dcache[0]} -expand {/system_tb/DUT/CPU/CM0/DCACHE/dcache[0].block} -expand {/system_tb/DUT/CPU/CM0/DCACHE/dcache[0].block[0]} -expand} /system_tb/DUT/CPU/CM0/DCACHE/dcache
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/dcache_next
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/datomic_reply
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/WB_buffer_data
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/WB_buffer_addr
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/WB_addr
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/WB_data
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/WB
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/atomic_faild
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/write_done
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/hit0
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/hit1
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/replace_block
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/dirty
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/valid
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/latch
-add wave -noupdate -expand -group dcache0 /system_tb/DUT/CPU/CM0/DCACHE/empty
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/CPUID
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/BAD
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/CLK
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/nRST
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/laststate
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/state
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/nextstate
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/dmemaddr
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/last_dmemaddr
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/snoopaddr
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/address_lock
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/snoopy_set
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/next_snoopy_set
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/last_address
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/last_replace_block
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/flush_cnt
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/flush_cnt_en
-add wave -noupdate -group dcache1 -expand -subitemconfig {{/system_tb/DUT/CPU/CM1/DCACHE/dcache[2]} -expand} /system_tb/DUT/CPU/CM1/DCACHE/dcache
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/dcache_next
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/datomic_reply
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/WB_buffer_data
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/WB_buffer_addr
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/WB_addr
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/WB_data
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/WB
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/write_done
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/hit0
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/hit1
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/replace_block
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/dirty
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/valid
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/latch
-add wave -noupdate -group dcache1 /system_tb/DUT/CPU/CM1/DCACHE/empty
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/halt
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/ihit
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/imemREN
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/imemload
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/imemaddr
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dhit
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/datomic
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dmemREN
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dmemWEN
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/flushed
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dmemload
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dmemstore
-add wave -noupdate -expand -group dpic0 /system_tb/DUT/CPU/CM0/dcif/dmemaddr
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/halt
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/ihit
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/imemREN
@@ -146,29 +64,42 @@ add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/flushed
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/dmemload
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/dmemstore
 add wave -noupdate -group dpif1 /system_tb/DUT/CPU/DP1/dpif/dmemaddr
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/CLK
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/nRST
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_in
-add wave -noupdate -group FIFO -expand /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_out
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_WEN
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_REN
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_empty
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_full
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/can_push
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/can_pop
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/counter
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_counter
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/rd_ptr
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/wr_ptr
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_rd_ptr
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_wr_ptr
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/memory
-add wave -noupdate -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/memory_next
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/halt
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/ihit
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/imemREN
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/imemload
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/imemaddr
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dhit
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/datomic
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dmemREN
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dmemWEN
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/flushed
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dmemload
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dmemstore
+add wave -noupdate -group dpic0 /system_tb/DUT/CPU/dcif0/dmemaddr
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/CLK
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/nRST
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_in
+add wave -noupdate -expand -group FIFO -expand /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_out
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_WEN
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_REN
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_empty
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/FIFO_full
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/can_push
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/can_pop
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/counter
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_counter
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/rd_ptr
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/wr_ptr
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_rd_ptr
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/next_wr_ptr
+add wave -noupdate -expand -group FIFO -expand /system_tb/DUT/CPU/CC/COC/FIFO/memory
+add wave -noupdate -expand -group FIFO /system_tb/DUT/CPU/CC/COC/FIFO/memory_next
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/CLK
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/nRST
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/ifid
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/idex
-add wave -noupdate -group dp0 -expand /system_tb/DUT/CPU/DP0/exmem
+add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/exmem
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/mem
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/j_inst
 add wave -noupdate -group dp0 /system_tb/DUT/CPU/DP0/i_inst
@@ -262,8 +193,76 @@ add wave -noupdate -group dp1 /system_tb/DUT/CPU/DP1/jumpExt
 add wave -noupdate -group dp1 /system_tb/DUT/CPU/DP1/pc_temp
 add wave -noupdate -group dp1 /system_tb/DUT/CPU/DP1/PC_out
 add wave -noupdate -group dp1 /system_tb/DUT/CPU/DP1/extended_imm
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/laststate
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/state
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/nextstate
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/returnstate
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/dmemaddr
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/last_dmemaddr
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/snoopaddr
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/atomic_faild
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/address_lock
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/snoopy_set
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/next_snoopy_set
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/go_snoopy
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/last_address
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/last_replace_block
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/flush_cnt
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/flush_cnt_en
+add wave -noupdate -group dcache0 -expand /system_tb/DUT/CPU/DCACHE0/dcache
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/dcache_next
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/datomic_reply
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/WB_buffer_data
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/WB_buffer_addr
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/WB_addr
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/WB_data
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/WB
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/write_done
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/hit0
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/hit1
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/replace_block
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/dirty
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/valid
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/latch
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/empty
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/inv
+add wave -noupdate -group dcache0 /system_tb/DUT/CPU/DCACHE0/write_pass
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/laststate
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/state
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/nextstate
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/returnstate
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/dmemaddr
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/last_dmemaddr
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/snoopaddr
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/atomic_faild
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/address_lock
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/snoopy_set
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/next_snoopy_set
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/go_snoopy
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/last_address
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/last_replace_block
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/flush_cnt
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/flush_cnt_en
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/dcache
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/dcache_next
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/datomic_reply
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/WB_buffer_data
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/WB_buffer_addr
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/WB_addr
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/WB_data
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/WB
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/write_done
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/hit0
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/hit1
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/replace_block
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/dirty
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/valid
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/latch
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/empty
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/inv
+add wave -noupdate -group dcache1 /system_tb/DUT/CPU/DCACHE1/write_pass
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1390926 ps} 0}
+WaveRestoreCursors {{Cursor 1} {363860274 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 175
 configure wave -valuecolwidth 171
@@ -279,4 +278,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {1200822 ps} {1546582 ps}
+WaveRestoreZoom {363480576 ps} {363826336 ps}

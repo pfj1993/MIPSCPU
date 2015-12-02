@@ -7,6 +7,7 @@ import cpu_types_pkg::*;
 module  coherence_control(
 			  input logic nRST,
 			  input logic CLK,
+			  output logic fifo_empty,
 			  coherence_control_if.snoopy_bus bus_if
 			  );
    parameter BAD = 32'hBAD1BAD1;
@@ -27,7 +28,7 @@ module  coherence_control(
    assign slave = ~master;
 
    //Write_back buffer FIFO Signal
-   logic 				 fifo_empty, fifo_full;
+   logic 				 fifo_full;
    logic 				 fifo_wen, fifo_ren;
    word_t   [1:0] 		         fifo_out, fifo_in; // word 1 is the addr, word 0 is the data
    

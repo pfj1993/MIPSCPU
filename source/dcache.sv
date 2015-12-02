@@ -4,8 +4,9 @@
 
 module dcache(input logic CLK,
 	      input logic nRST,
+	      input logic buffer_empty,
 	      datapath_cache_if.dcache dcif,
-	      cache_control_if.dcache ccif
+	      cache_control_if ccif
 	      );
    
    import cache_pkg::*;
@@ -222,6 +223,7 @@ module dcache(input logic CLK,
 	   end
 	   lmif.update = dcif.datomic;
 	   dcache_next[dmemaddr.idx].block[replace_block].data[dmemaddr.blkoff] = ccif.dload[CPUID];
+	   dcache_next[dmemaddr.idx].block[replace_block].MESI = INVALID;
 	   address_lock = 1;
 	   ccif.dREN[CPUID] = 1;
 	   ccif.dWEN[CPUID] = WB;
@@ -325,7 +327,7 @@ module dcache(input logic CLK,
 	end
 	
 	CACHE_HALT: begin
-	   dcif.flushed = 1;
+	   dcif.flushed = buffer_empty;
 	   ccif.cctrans[CPUID] = 0;
 	end
 	
